@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 160" role="img" aria-labelledby="title">
+  <title id="title">Momiz</title>
+  <g fill="none" stroke="#3E356B" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 130V30l45 100 45-100v100"/>
+    <circle cx="190" cy="80" r="51"/>
+    <path d="M270 130V30l45 100 45-100v100"/>
+    <path d="M410 30v100"/>
+    <path d="M450 30h90l-90 100h90"/>
+  </g>
+</svg>

@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["5PN69BWKGT.com.lifeados.momiz"],
+        "components": [
+          { "/": "/convite/*", "comment": "Convites públicos do Momiz" },
+          { "/": "/events/*", "comment": "Eventos e listas de presentes" }
+        ]
+      }
+    ]
+  }
+}
