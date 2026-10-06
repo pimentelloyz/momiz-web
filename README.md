@@ -11,6 +11,9 @@ npm install
 npm run dev
 ```
 
+A página fica disponível em `http://localhost:3021`. A API local do Momiz usa
+`http://localhost:3020`.
+
 As variáveis `NEXT_PUBLIC_APP_STORE_URL` e `NEXT_PUBLIC_GOOGLE_PLAY_URL` ativam
 os botões das lojas. Sem elas, os botões exibem “Em breve”.
 
