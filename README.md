@@ -17,6 +17,10 @@ A página fica disponível em `http://localhost:3021`. A API local do Momiz usa
 As variáveis `NEXT_PUBLIC_APP_STORE_URL` e `NEXT_PUBLIC_GOOGLE_PLAY_URL` ativam
 os botões das lojas. Sem elas, os botões exibem “Em breve”.
 
+`MOMIZ_API_BASE_URL` define a API usada pela página pública de convite.
+Em desenvolvimento, use `http://localhost:3020`; na Vercel, use
+`https://api.momiz.com.br`.
+
 ## Deploy na Vercel
 
 1. Importe este repositório na Vercel ou execute `vercel link`.

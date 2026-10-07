@@ -3,7 +3,10 @@
     "apps": [],
     "details": [
       {
-        "appIDs": ["5PN69BWKGT.com.lifeados.momiz"],
+        "appIDs": [
+          "5PN69BWKGT.com.lifeados.momiz",
+          "5PN69BWKGT.com.lifeados.momiz.dev"
+        ],
         "components": [
           { "/": "/convite/*", "comment": "Convites públicos do Momiz" },
           { "/": "/events/*", "comment": "Eventos e listas de presentes" }

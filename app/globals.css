@@ -228,6 +228,91 @@ img { display: block; max-width: 100%; }
 .legal-content p { margin: 0; color: var(--muted); line-height: 1.85; }
 .legal-content a { color: var(--violet); text-decoration: underline; }
 
+.invite-page {
+  width: min(920px, calc(100% - 48px));
+  margin: 28px auto 110px;
+}
+.invite-card {
+  overflow: hidden;
+  color: var(--invite-foreground);
+  border: 1px solid color-mix(in srgb, var(--invite-foreground) 14%, transparent);
+  border-radius: 36px;
+  background: var(--invite-background);
+  box-shadow: 0 28px 80px rgba(62, 53, 107, .12);
+}
+.invite-cover { width: 100%; max-height: 390px; object-fit: cover; }
+.invite-card-copy { padding: clamp(42px, 8vw, 82px); text-align: center; }
+.invite-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+.invite-card h1, .invite-state h1 {
+  margin: 18px 0 12px;
+  font-family: var(--font-display), serif;
+  font-size: clamp(48px, 8vw, 76px);
+  font-weight: 500;
+  letter-spacing: -.04em;
+  line-height: 1.04;
+}
+.invite-subtitle { margin: 0; font-size: clamp(18px, 3vw, 24px); font-weight: 700; }
+.invite-description { max-width: 600px; margin: 26px auto 0; line-height: 1.75; }
+.invite-details { padding: 48px 18px 0; }
+.invite-detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.invite-detail {
+  min-width: 0;
+  padding: 22px;
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: white;
+}
+.invite-detail > span {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: var(--violet);
+  border-radius: 13px;
+  background: #efecff;
+  font-size: 22px;
+}
+.invite-detail strong { color: var(--plum); }
+.invite-detail p { margin: 5px 0 0; color: var(--muted); line-height: 1.55; }
+.invite-detail small { display: block; margin-top: 8px; color: var(--muted); line-height: 1.4; }
+.invite-details blockquote {
+  margin: 28px 0 0;
+  padding: 28px;
+  color: var(--plum);
+  border: 0;
+  border-radius: 20px;
+  background: #fff3ee;
+  font-family: var(--font-display), serif;
+  font-size: 22px;
+  text-align: center;
+}
+.invite-actions { margin-top: 34px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.button.secondary { padding: 17px 28px; color: var(--plum); border: 1px solid rgba(62, 53, 107, .3); font-size: 14px; font-weight: 800; }
+.invite-action-note { margin: 17px auto 0; color: var(--muted); font-size: 13px; text-align: center; }
+.invite-state {
+  width: min(640px, calc(100% - 48px));
+  min-height: 620px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.invite-state-icon { width: 72px; height: 72px; display: grid; place-items: center; color: var(--coral); border-radius: 24px; background: #fff0eb; font-size: 38px; }
+.invite-state h1 { font-size: clamp(42px, 7vw, 62px); }
+.invite-state > p:not(.eyebrow) { max-width: 520px; margin: 0 0 30px; color: var(--muted); line-height: 1.7; }
+.invite-state .eyebrow { margin-top: 26px; }
+
 @media (max-width: 900px) {
   .site-header nav > a:not(.nav-cta) { display: none; }
   .hero { grid-template-columns: 1fr; padding-top: 70px; text-align: center; }
@@ -262,6 +347,14 @@ img { display: block; max-width: 100%; }
   .site-footer { grid-template-columns: 1fr; }
   .footer-links { flex-wrap: wrap; gap: 18px; }
   .legal-page { padding-top: 54px; }
+  .invite-page { width: calc(100% - 24px); margin-top: 12px; margin-bottom: 72px; }
+  .invite-card { border-radius: 26px; }
+  .invite-card-copy { padding: 44px 24px; }
+  .invite-card h1 { font-size: 46px; }
+  .invite-details { padding: 28px 4px 0; }
+  .invite-detail-grid { grid-template-columns: 1fr; }
+  .invite-actions { flex-direction: column; }
+  .invite-actions .button { width: 100%; text-align: center; }
 }
 
 @media (max-width: 420px) {

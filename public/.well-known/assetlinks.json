@@ -8,5 +8,15 @@
         "FD:C9:6C:D5:54:60:FB:44:46:8A:BD:83:20:66:90:10:96:86:01:3A:ED:9E:DB:B6:F1:90:F3:65:61:38:0F:CA"
       ]
     }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.lifeados.momiz.dev",
+      "sha256_cert_fingerprints": [
+        "09:DB:EA:90:A1:10:9C:F1:00:2D:5B:D8:49:AB:40:5B:0C:08:98:CB:75:33:D1:1B:FA:78:B0:E9:76:BF:DE:6A"
+      ]
+    }
   }
 ]
