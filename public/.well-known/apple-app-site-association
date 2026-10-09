@@ -4,8 +4,8 @@
     "details": [
       {
         "appIDs": [
-          "5PN69BWKGT.com.lifeados.momiz",
-          "5PN69BWKGT.com.lifeados.momiz.dev"
+          "2B3NAR3YX7.com.lifeados.momiz",
+          "2B3NAR3YX7.com.lifeados.momiz.dev"
         ],
         "components": [
           { "/": "/convite/*", "comment": "Convites públicos do Momiz" },
