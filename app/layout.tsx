@@ -24,6 +24,16 @@ export const metadata: Metadata = {
   },
   description:
     "Organize momentos especiais, convites, convidados e presentes em um só lugar.",
+  manifest: "/site.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
+      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   openGraph: {
     type: "website",
     locale: "pt_BR",
@@ -32,12 +42,14 @@ export const metadata: Metadata = {
     title: "Momiz — cada detalhe, mais perto de quem importa",
     description:
       "Organize momentos especiais, convites, convidados e presentes em um só lugar.",
+    images: [{ url: "/brand/momiz-og.png", width: 1024, height: 500, alt: "Momiz" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Momiz — cada detalhe, mais perto de quem importa",
     description:
       "Organize momentos especiais, convites, convidados e presentes em um só lugar.",
+    images: ["/brand/momiz-og.png"],
   },
   alternates: { canonical: "/" },
 };
@@ -53,8 +65,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className={`${manrope.variable} ${playfair.variable}`}>
         <header className="site-header">
           <Link href="/" className="brand" aria-label="Momiz — início">
-            {/* O wordmark oficial é vetorial e permanece legível em qualquer tela. */}
-            <Image src="/brand/momiz-wordmark.svg" alt="Momiz" width={560} height={160} priority />
+            <Image src="/brand/momiz-logo-horizontal.png" alt="Momiz" width={1600} height={533} priority />
           </Link>
           <nav aria-label="Navegação principal">
             <Link href="/#como-funciona">Como funciona</Link>
@@ -65,7 +76,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <main>{children}</main>
         <footer className="site-footer">
           <div>
-            <Image src="/brand/momiz-wordmark.svg" alt="Momiz" width={560} height={160} />
+            <Image src="/brand/momiz-logo-horizontal.png" alt="Momiz" width={1600} height={533} />
             <p>Momentos importantes merecem leveza.</p>
           </div>
           <div className="footer-links">
