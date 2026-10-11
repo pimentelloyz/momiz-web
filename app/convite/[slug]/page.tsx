@@ -172,11 +172,13 @@ export default async function InvitePage({ params, searchParams }: InvitePagePro
         {event.footerMessage ? <blockquote>{event.footerMessage}</blockquote> : null}
 
         <div className="invite-actions">
-          <a className="button primary" href={deepLink}>Abrir no app e confirmar presença</a>
+          <p><strong>Como você quer participar?</strong></p>
+          <p>Você pode ir ao chá ou participar de longe e escolher um presente pelo Momiz.</p>
+          <a className="button primary" href={deepLink}>Abrir no Momiz e escolher</a>
           <Link className="button secondary" href="/#baixar">Ainda não tenho o app</Link>
         </div>
         <p className="invite-action-note">
-          No app você também encontra a lista de presentes e todas as informações do evento.
+          No app, sua resposta ajuda a família a planejar o evento com números reais. Quem participa de longe não entra na contagem de alimentação e lembrancinhas.
         </p>
       </section>
     </article>

@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     template: "%s | Momiz",
   },
   description:
-    "Organize momentos especiais, convites, convidados e presentes em um só lugar.",
+    "Organize seu chá, acompanhe participações presenciais e de longe e compartilhe presentes com Pix ou entrega física.",
   manifest: "/site.webmanifest",
   icons: {
     icon: [
@@ -41,14 +41,14 @@ export const metadata: Metadata = {
     siteName: "Momiz",
     title: "Momiz — cada detalhe, mais perto de quem importa",
     description:
-      "Organize momentos especiais, convites, convidados e presentes em um só lugar.",
+      "Organize seu chá, acompanhe participações presenciais e de longe e compartilhe presentes com Pix ou entrega física.",
     images: [{ url: "/brand/momiz-og.png", width: 1024, height: 500, alt: "Momiz" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Momiz — cada detalhe, mais perto de quem importa",
     description:
-      "Organize momentos especiais, convites, convidados e presentes em um só lugar.",
+      "Organize seu chá, acompanhe participações presenciais e de longe e compartilhe presentes com Pix ou entrega física.",
     images: ["/brand/momiz-og.png"],
   },
   alternates: { canonical: "/" },

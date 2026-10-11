@@ -1,11 +1,19 @@
 # Roadmap web — participacao de longe e presentes no Momiz
 
-> **Status:** planejado, desenvolvimento ainda nao iniciado
+> **Status:** implementado localmente em 11 de outubro de 2026
 >
 > **Data da decisao:** 11 de outubro de 2026
 >
 > **Escopo:** landing institucional, fallback publico de convite, SEO e paginas
 > legais relacionadas a participacao e presentes.
+
+## Entrega realizada
+
+- hero, beneficios e passos alinhados com participacao presencial ou de longe;
+- secao do carrinho de presentes e linguagem correta para Pix direto a familia;
+- fallback publico do convite atualizado;
+- metadados, Termos de Uso e Politica de Privacidade revisados;
+- typecheck, lint e build de producao aprovados.
 
 ## Objetivo
 

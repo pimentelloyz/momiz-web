@@ -4,18 +4,18 @@ const playStoreUrl = process.env.NEXT_PUBLIC_GOOGLE_PLAY_URL;
 const features = [
   {
     number: "01",
-    title: "Eventos sem planilhas",
-    text: "Convites, confirmações e lista de convidados organizados no mesmo lugar.",
+    title: "Planeje com números reais",
+    text: "Separe quem estará no evento de quem vai participar de longe, sem errar no lanche ou nas lembrancinhas.",
   },
   {
     number: "02",
-    title: "Presentes com liberdade",
-    text: "Monte sua lista, acompanhe reservas e organize contribuições do seu jeito.",
+    title: "Aproxime quem mora longe",
+    text: "Amigos e familiares podem acompanhar o chá e presentear mesmo sem comparecer.",
   },
   {
     number: "03",
-    title: "Tudo perto de você",
-    text: "Informações importantes e lembranças disponíveis quando você precisar.",
+    title: "Presentes do jeito da família",
+    text: "Monte uma lista e aceite itens físicos ou Pix conforme a preferência do seu chá.",
   },
 ];
 
@@ -57,13 +57,13 @@ export default function Home() {
       <section className="hero">
         <div className="hero-copy">
           <span className="eyebrow">Feito para momentos que ficam</span>
-          <h1>Organizar o que importa pode ser <em>mais leve.</em></h1>
+          <h1>Seu chá perto de quem importa — <em>até de longe.</em></h1>
           <p>
-            Do convite ao presente, o Momiz reúne tudo para você viver cada etapa
-            com mais presença e menos preocupação.
+            Organize convites, confirme quem estará presente e permita que amigos
+            e familiares participem com carinho de onde estiverem.
           </p>
           <div className="hero-actions">
-            <a className="button primary" href="#baixar">Quero conhecer</a>
+            <a className="button primary" href="#baixar">Começar meu chá</a>
             <a className="text-link" href="#como-funciona">Veja como funciona <span>↓</span></a>
           </div>
         </div>
@@ -95,8 +95,20 @@ export default function Home() {
         </div>
         <div className="steps">
           <article><span>1</span><h3>Crie seu evento</h3><p>Personalize as informações e deixe tudo com a sua cara.</p></article>
-          <article><span>2</span><h3>Convide quem importa</h3><p>Compartilhe o convite e acompanhe cada confirmação.</p></article>
-          <article><span>3</span><h3>Aproveite de verdade</h3><p>Centralize presentes e detalhes para curtir sem correria.</p></article>
+          <article><span>2</span><h3>Convide perto e longe</h3><p>Cada pessoa escolhe se vai ao chá ou se participa de onde estiver.</p></article>
+          <article><span>3</span><h3>Encha o carrinho de carinho</h3><p>Reúna vários presentes e escolha entre entrega física ou Pix.</p></article>
+        </div>
+      </section>
+
+      <section className="section how" aria-labelledby="gift-cart-title">
+        <div className="section-heading">
+          <span className="eyebrow">Presentes com liberdade</span>
+          <h2 id="gift-cart-title">Um carrinho de bebê<br />para encher de carinho.</h2>
+        </div>
+        <div className="steps">
+          <article><span aria-hidden="true">♡</span><h3>Escolha mais de um item</h3><p>Fraldas, lenços e outros presentes ficam juntos até você concluir.</p></article>
+          <article><span aria-hidden="true">⌁</span><h3>Economize tempo</h3><p>Quando a família habilitar, envie por Pix o valor dos itens diretamente para ela.</p></article>
+          <article><span aria-hidden="true">✓</span><h3>Acompanhe no Momiz</h3><p>O app organiza a lista, as reservas e o andamento de cada presente.</p></article>
         </div>
       </section>
 
