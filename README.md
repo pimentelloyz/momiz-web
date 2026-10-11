@@ -39,3 +39,7 @@ em outra data.
 Os arquivos de App Links ficam em `public/.well-known`. Antes de publicar o app
 Android na Play Store, acrescente ao `assetlinks.json` o SHA-256 do certificado
 **App signing** exibido no Play Console; ele normalmente difere da chave de upload.
+
+## Documentacao de produto
+
+- [Roadmap de participacao presencial/virtual e presentes](docs/roadmap-participacao-presentes-web.md)
