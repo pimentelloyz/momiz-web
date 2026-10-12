@@ -209,7 +209,7 @@ img { display: block; max-width: 100%; }
   gap: 30px;
   align-items: end;
 }
-.site-footer img { width: 104px; }
+.site-footer img { width: 104px; height: auto; }
 .site-footer p, .site-footer small { color: var(--muted); font-size: 12px; }
 .footer-links { display: flex; gap: 24px; font-size: 13px; font-weight: 700; }
 .site-footer > small { grid-column: 1 / -1; padding-top: 26px; border-top: 1px solid var(--line); }
