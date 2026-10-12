@@ -4,8 +4,8 @@
   "description": "Organize momentos especiais, convites, convidados e presentes em um só lugar.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FAF9FC",
-  "theme_color": "#132754",
+  "background_color": "#FAF7F2",
+  "theme_color": "#4D6958",
   "icons": [
     {
       "src": "/icon-192.png",

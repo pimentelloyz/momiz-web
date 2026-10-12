@@ -55,7 +55,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#faf9fc",
+  themeColor: "#faf7f2",
   colorScheme: "light",
 };
 
@@ -80,9 +80,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <p>Momentos importantes merecem leveza.</p>
           </div>
           <div className="footer-links">
+            <Link href="/suporte">Central de suporte</Link>
             <Link href="/termos">Termos de uso</Link>
             <Link href="/privacidade">Privacidade</Link>
-            <a href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "suporte@momiz.com.br"}`}>Contato</a>
+            <Link href="/excluir-conta">Excluir conta</Link>
           </div>
           <small>© {new Date().getFullYear()} Momiz. Todos os direitos reservados.</small>
         </footer>

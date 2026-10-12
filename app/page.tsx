@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const appStoreUrl = process.env.NEXT_PUBLIC_APP_STORE_URL;
 const playStoreUrl = process.env.NEXT_PUBLIC_GOOGLE_PLAY_URL;
 
@@ -40,17 +42,6 @@ function StoreButton({ store, url }: { store: "Apple" | "Google"; url?: string }
   );
 }
 
-function HeartMark() {
-  return (
-    <div className="heart-mark" aria-hidden="true">
-      <span className="arm arm-left" />
-      <span className="arm arm-right" />
-      <span className="person person-big" />
-      <span className="person person-small" />
-    </div>
-  );
-}
-
 export default function Home() {
   return (
     <>
@@ -70,7 +61,14 @@ export default function Home() {
         <div className="hero-art" aria-label="Uma família acolhida pelo símbolo Momiz">
           <div className="orbit orbit-one" />
           <div className="orbit orbit-two" />
-          <HeartMark />
+          <Image
+            className="hero-symbol"
+            src="/brand/momiz-symbol.png"
+            alt="Símbolo Momiz: uma vida em formação acolhida"
+            width={1024}
+            height={1024}
+            priority
+          />
           <div className="floating-card card-guests">
             <span className="card-icon">✓</span>
             <span><strong>Convidados</strong><small>Confirmações em dia</small></span>
@@ -130,7 +128,14 @@ export default function Home() {
 
       <section className="download" id="baixar">
         <div className="download-glow" />
-        <HeartMark />
+        <Image
+          className="download-symbol"
+          src="/brand/momiz-symbol.png"
+          alt=""
+          width={1024}
+          height={1024}
+          aria-hidden="true"
+        />
         <span className="eyebrow light">Seu próximo momento começa aqui</span>
         <h2>Leve o Momiz<br />com você.</h2>
         <p>Baixe o app e transforme organização em tranquilidade.</p>
@@ -142,3 +147,4 @@ export default function Home() {
     </>
   );
 }
+
