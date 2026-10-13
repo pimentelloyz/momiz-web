@@ -246,7 +246,13 @@ img { display: block; max-width: 100%; }
   background: var(--invite-background);
   box-shadow: 0 28px 80px rgba(53, 75, 61, .12);
 }
-.invite-cover { width: 100%; max-height: 390px; object-fit: cover; }
+.invite-cover {
+  width: 100%;
+  height: auto;
+  max-height: none;
+  display: block;
+  object-fit: contain;
+}
 .invite-card-copy { padding: clamp(42px, 8vw, 82px); text-align: center; }
 .invite-kicker {
   font-size: 11px;
