@@ -43,3 +43,4 @@ Android na Play Store, acrescente ao `assetlinks.json` o SHA-256 do certificado
 ## Documentacao de produto
 
 - [Roadmap de participacao presencial/virtual e presentes](docs/roadmap-participacao-presentes-web.md)
+- [Backlog do painel editorial do Hub de dicas](docs/backlog-painel-editorial-hub-dicas.md)
