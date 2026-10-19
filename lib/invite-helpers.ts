@@ -2,8 +2,13 @@ export function firstValue(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export function safeColor(value: string | null | undefined, fallback: string) {
-  return value && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
+const API_HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+export function safeColor(
+  value: string | null | undefined,
+  fallback?: string,
+) {
+  return value && API_HEX_COLOR.test(value) ? value.toLowerCase() : fallback;
 }
 
 export function formatEventDate(value: string) {

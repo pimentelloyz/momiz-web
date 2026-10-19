@@ -11,6 +11,11 @@
   --ink: #223027;
   --muted: #626d65;
   --line: #ded5cc;
+  --invite-background: #f1edfb;
+  --invite-foreground: var(--primary);
+  --invite-card-border: color-mix(in srgb, var(--invite-foreground) 14%, transparent);
+  --invite-card-shadow: rgba(53, 75, 61, .12);
+  --invite-action-border: rgba(77, 105, 88, .34);
   --max: 1180px;
 }
 
@@ -241,10 +246,10 @@ img { display: block; max-width: 100%; }
 .invite-card {
   overflow: hidden;
   color: var(--invite-foreground);
-  border: 1px solid color-mix(in srgb, var(--invite-foreground) 14%, transparent);
+  border: 1px solid var(--invite-card-border);
   border-radius: 36px;
   background: var(--invite-background);
-  box-shadow: 0 28px 80px rgba(53, 75, 61, .12);
+  box-shadow: 0 28px 80px var(--invite-card-shadow);
 }
 .invite-cover {
   width: 100%;
@@ -308,7 +313,7 @@ img { display: block; max-width: 100%; }
   text-align: center;
 }
 .invite-actions { margin-top: 34px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-.button.secondary { padding: 17px 28px; color: var(--primary-pressed); border: 1px solid rgba(77, 105, 88, .34); font-size: 14px; font-weight: 800; }
+.button.secondary { padding: 17px 28px; color: var(--primary-pressed); border: 1px solid var(--invite-action-border); font-size: 14px; font-weight: 800; }
 .invite-action-note { margin: 17px auto 0; color: var(--muted); font-size: 13px; text-align: center; }
 .invite-state {
   width: min(640px, calc(100% - 48px));

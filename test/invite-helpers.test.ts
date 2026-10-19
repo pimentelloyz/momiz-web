@@ -8,11 +8,18 @@ test("firstValue returns the first query value", () => {
   assert.equal(firstValue(), undefined);
 });
 
-test("safeColor accepts six-digit hex colors only", () => {
-  assert.equal(safeColor("#Aa09fF", "#000000"), "#Aa09fF");
+test("safeColor normalizes API-supported six-digit hex colors", () => {
+  assert.equal(safeColor("#Aa09fF"), "#aa09ff");
+  assert.equal(safeColor("#112233"), "#112233");
+});
+
+test("safeColor rejects unsupported formats and uses the requested fallback", () => {
   assert.equal(safeColor("#fff", "#000000"), "#000000");
+  assert.equal(safeColor("#11223344", "#000000"), "#000000");
+  assert.equal(safeColor(" #112233", "#000000"), "#000000");
   assert.equal(safeColor("red", "#000000"), "#000000");
   assert.equal(safeColor(null, "#000000"), "#000000");
+  assert.equal(safeColor(undefined), undefined);
 });
 
 test("formatEventDate formats valid dates in the event timezone", () => {

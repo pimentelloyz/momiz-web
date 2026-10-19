@@ -71,8 +71,8 @@ export default async function InvitePage({ params, searchParams }: InvitePagePro
   const title = theme?.heroTitle || event.title;
   const subtitle = theme?.heroSubtitle || event.subtitle || "Você está convidado";
   const date = formatEventDate(event.eventDateTime);
-  const background = safeColor(theme?.backgroundColor, "#f1edfb");
-  const foreground = safeColor(theme?.primaryColor, "#4d6958");
+  const background = safeColor(theme?.backgroundColor);
+  const foreground = safeColor(theme?.primaryColor);
   const place = [address?.venueName, address?.city, address?.state]
     .filter(Boolean)
     .join(" · ");
