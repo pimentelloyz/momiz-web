@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { API_BASE_URL } from "../../../lib/site-config";
 
 type InvitePageProps = {
   params: Promise<{ slug: string }>;
@@ -32,12 +33,6 @@ type EventDetails = {
   } | null;
 };
 
-const apiBaseUrl =
-  process.env.MOMIZ_API_BASE_URL ||
-  (process.env.NODE_ENV === "production"
-    ? "https://api.momiz.com.br"
-    : "http://localhost:3020");
-
 function firstValue(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -50,7 +45,7 @@ async function getEventDetails(slug: string, guest?: string) {
   const query = guest ? `?guestId=${encodeURIComponent(guest)}` : "";
   try {
     const response = await fetch(
-      `${apiBaseUrl}/api/events/by-slug/${encodeURIComponent(slug)}/details${query}`,
+      `${API_BASE_URL}/api/events/by-slug/${encodeURIComponent(slug)}/details${query}`,
       { next: { revalidate: 60 } },
     );
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { siteConfig } from "../../lib/site-config";
 import { LegalPage } from "../legal-page";
 
 export const metadata: Metadata = {
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Termos de uso" version="12 de outubro de 2026">
+    <LegalPage title="Termos de uso">
       <div className="legal-summary">
         <strong>Organização com regras claras.</strong>
         <p>Ao criar uma conta ou utilizar o Momiz, você concorda com estes termos e com nossa Política de Privacidade.</p>
@@ -23,7 +24,7 @@ export default function TermsPage() {
       <section><h2>7. Alterações</h2><p>Mudanças materiais nestes termos serão comunicadas e, quando necessário, exigirão novo aceite antes da continuidade do uso.</p></section>
       <section><h2>8. Encerramento da conta</h2><p>Você pode excluir sua conta pelo aplicativo em <strong>Perfil → Privacidade e meus dados</strong>. A exclusão pode anonimizar participações vinculadas a eventos de terceiros e preservar informações pelo período necessário ao cumprimento de obrigações legais. Veja os detalhes em <a href="/excluir-conta">Excluir conta e dados</a>.</p></section>
       <section><h2>9. Legislação aplicável</h2><p>Estes termos são interpretados conforme a legislação brasileira. Direitos assegurados pela legislação de proteção ao consumidor e de proteção de dados permanecem preservados.</p></section>
-      <section><h2>10. Contato</h2><p>Dúvidas, solicitações ou incidentes podem ser enviados para <a href="mailto:suporte@momiz.com.br">suporte@momiz.com.br</a> ou pela <a href="/suporte">Central de suporte</a>.</p></section>
+      <section><h2>10. Contato</h2><p>Dúvidas, solicitações ou incidentes podem ser enviados para <a href={`mailto:${siteConfig.supportEmail}`}>{siteConfig.supportEmail}</a> ou pela <a href="/suporte">Central de suporte</a>.</p></section>
     </LegalPage>
   );
 }

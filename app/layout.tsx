@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Manrope, Playfair_Display } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
+import { LEGAL_LINKS, SITE_URL, siteConfig } from "../lib/site-config";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -17,13 +18,12 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://momiz.com.br"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Momiz — cada detalhe, mais perto de quem importa",
     template: "%s | Momiz",
   },
-  description:
-    "Organize seu chá, acompanhe participações presenciais e de longe e compartilhe presentes com Pix ou entrega física.",
+  description: siteConfig.description,
   manifest: "/site.webmanifest",
   icons: {
     icon: [
@@ -37,18 +37,16 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "pt_BR",
-    url: "https://momiz.com.br",
+    url: SITE_URL,
     siteName: "Momiz",
     title: "Momiz — cada detalhe, mais perto de quem importa",
-    description:
-      "Organize seu chá, acompanhe participações presenciais e de longe e compartilhe presentes com Pix ou entrega física.",
+    description: siteConfig.description,
     images: [{ url: "/brand/momiz-og.png", width: 1024, height: 500, alt: "Momiz" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Momiz — cada detalhe, mais perto de quem importa",
-    description:
-      "Organize seu chá, acompanhe participações presenciais e de longe e compartilhe presentes com Pix ou entrega física.",
+    description: siteConfig.description,
     images: ["/brand/momiz-og.png"],
   },
   alternates: { canonical: "/" },
@@ -80,10 +78,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <p>Momentos importantes merecem leveza.</p>
           </div>
           <div className="footer-links">
-            <Link href="/suporte">Central de suporte</Link>
-            <Link href="/termos">Termos de uso</Link>
-            <Link href="/privacidade">Privacidade</Link>
-            <Link href="/excluir-conta">Excluir conta</Link>
+            {LEGAL_LINKS.map((link) => (
+              <Link key={link.href} href={link.href}>{link.label}</Link>
+            ))}
           </div>
           <small>© {new Date().getFullYear()} Momiz. Todos os direitos reservados.</small>
         </footer>
