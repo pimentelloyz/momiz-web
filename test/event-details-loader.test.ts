@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  createCachedEventDetailsLoader,
   loadEventDetails,
   type EventDetailsLoadFailure,
 } from "../lib/event-details-loader.ts";
@@ -18,6 +19,42 @@ function response(body: unknown, status = 200) {
     headers: { "content-type": "application/json" },
   });
 }
+
+function cacheByArguments<Args extends unknown[], Result>(
+  fn: (...args: Args) => Result,
+): (...args: Args) => Result {
+  const values = new Map<string, Result>();
+
+  return (...args) => {
+    const key = JSON.stringify(args);
+    if (!values.has(key)) values.set(key, fn(...args));
+    return values.get(key) as Result;
+  };
+}
+
+test("cached loader dedupes the same slug and guest but keeps distinct keys", async () => {
+  const calls: Array<[string, string | undefined]> = [];
+  const cachedLoader = createCachedEventDetailsLoader(
+    cacheByArguments,
+    async (slug, guest) => {
+      calls.push([slug, guest]);
+      return { ok: true, data: details };
+    },
+  );
+
+  const first = cachedLoader("festa-2026", "guest-1");
+  const duplicate = cachedLoader("festa-2026", "guest-1");
+  const otherGuest = cachedLoader("festa-2026", "guest-2");
+  const otherSlug = cachedLoader("outra-festa", "guest-1");
+
+  assert.strictEqual(duplicate, first);
+  await Promise.all([first, duplicate, otherGuest, otherSlug]);
+  assert.deepEqual(calls, [
+    ["festa-2026", "guest-1"],
+    ["festa-2026", "guest-2"],
+    ["outra-festa", "guest-1"],
+  ]);
+});
 
 test("loads details and safely encodes route parameters", async () => {
   let requestedUrl = "";

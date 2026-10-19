@@ -15,6 +15,22 @@ type LoadEventDetailsOptions = {
   onFailure?: (failure: EventDetailsLoadFailure) => void;
 };
 
+export type EventDetailsLoader = (
+  slug: string,
+  guest: string | undefined,
+) => Promise<EventDetailsLoadResult>;
+
+type CacheFunction = <Args extends unknown[], Result>(
+  fn: (...args: Args) => Result,
+) => (...args: Args) => Result;
+
+export function createCachedEventDetailsLoader(
+  cacheFn: CacheFunction,
+  loader: EventDetailsLoader,
+): EventDetailsLoader {
+  return cacheFn((slug, guest) => loader(slug, guest));
+}
+
 function isEventDetails(value: unknown): value is EventDetails {
   if (!value || typeof value !== "object") return false;
 

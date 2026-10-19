@@ -1,31 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  loadEventDetails,
-  type EventDetailsLoadFailure,
-  type EventDetailsLoadResult,
-} from "../../../lib/event-details-loader";
+import type { EventDetailsLoadResult } from "../../../lib/event-details-loader";
+import { getEventDetails } from "../../../lib/event-details-server";
 import { firstValue, formatEventDate, safeColor } from "../../../lib/invite-helpers";
-import { API_BASE_URL } from "../../../lib/site-config";
 
 type InvitePageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ guest?: string | string[] }>;
 };
-
-function observeLoadFailure(error: EventDetailsLoadFailure) {
-  console.error("[invite-details] API load failed", {
-    kind: error.kind,
-    status: error.status,
-  });
-}
-
-function getEventDetails(slug: string, guest?: string) {
-  return loadEventDetails(slug, guest, {
-    apiBaseUrl: API_BASE_URL,
-    onFailure: observeLoadFailure,
-  });
-}
 
 function InviteError({ result }: { result: Extract<EventDetailsLoadResult, { ok: false }> }) {
   const transient = result.error.kind !== "not_found";
@@ -49,9 +31,12 @@ function InviteError({ result }: { result: Extract<EventDetailsLoadResult, { ok:
   );
 }
 
-export async function generateMetadata({ params }: InvitePageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const result = await getEventDetails(slug);
+export async function generateMetadata({
+  params,
+  searchParams,
+}: InvitePageProps): Promise<Metadata> {
+  const [{ slug }, query] = await Promise.all([params, searchParams]);
+  const result = await getEventDetails(slug, firstValue(query.guest));
   const details = result.ok ? result.data : null;
   const title = details?.theme?.heroTitle || details?.event.title || "Convite especial";
   const description =
