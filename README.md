@@ -14,6 +14,20 @@ npm run dev
 A página fica disponível em `http://localhost:3021`. A API local do Momiz usa
 `http://localhost:3020`.
 
+## Testes
+
+```bash
+npm test
+npm run build
+npm run test:e2e:install
+npm run test:e2e
+```
+
+Os smoke tests E2E sobem o build de produção em `http://127.0.0.1:3021` e uma
+API fake local em `http://127.0.0.1:3022`. Os cenários de convite usam somente
+fixtures fictícias, sem acessar a API externa. No CI, o Chromium e suas
+dependências de sistema são instalados antes da suíte.
+
 As variáveis `NEXT_PUBLIC_APP_STORE_URL` e `NEXT_PUBLIC_GOOGLE_PLAY_URL` ativam
 os botões das lojas. Sem elas, os botões exibem “Em breve”.
 
