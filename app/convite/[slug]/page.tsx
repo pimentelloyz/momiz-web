@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import {
+  loadEventDetails,
+  type EventDetailsLoadFailure,
+  type EventDetailsLoadResult,
+} from "../../../lib/event-details-loader";
+import { firstValue, formatEventDate, safeColor } from "../../../lib/invite-helpers";
 import { API_BASE_URL } from "../../../lib/site-config";
 
 type InvitePageProps = {
@@ -7,69 +13,46 @@ type InvitePageProps = {
   searchParams: Promise<{ guest?: string | string[] }>;
 };
 
-type EventDetails = {
-  event: {
-    title: string;
-    subtitle?: string | null;
-    description?: string | null;
-    eventDateTime: string;
-    coverImageUrl?: string | null;
-    dressCode?: string | null;
-    footerMessage?: string | null;
-  };
-  address?: {
-    venueName?: string | null;
-    street?: string | null;
-    number?: string | null;
-    city?: string | null;
-    state?: string | null;
-    isRedacted?: boolean;
-  } | null;
-  theme?: {
-    heroTitle?: string | null;
-    heroSubtitle?: string | null;
-    backgroundColor?: string | null;
-    primaryColor?: string | null;
-  } | null;
-};
-
-function firstValue(value?: string | string[]) {
-  return Array.isArray(value) ? value[0] : value;
+function observeLoadFailure(error: EventDetailsLoadFailure) {
+  console.error("[invite-details] API load failed", {
+    kind: error.kind,
+    status: error.status,
+  });
 }
 
-function safeColor(value: string | null | undefined, fallback: string) {
-  return value && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
+function getEventDetails(slug: string, guest?: string) {
+  return loadEventDetails(slug, guest, {
+    apiBaseUrl: API_BASE_URL,
+    onFailure: observeLoadFailure,
+  });
 }
 
-async function getEventDetails(slug: string, guest?: string) {
-  const query = guest ? `?guestId=${encodeURIComponent(guest)}` : "";
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/events/by-slug/${encodeURIComponent(slug)}/details${query}`,
-      { next: { revalidate: 60 } },
-    );
+function InviteError({ result }: { result: Extract<EventDetailsLoadResult, { ok: false }> }) {
+  const transient = result.error.kind !== "not_found";
 
-    if (!response.ok) return null;
-    return (await response.json()) as EventDetails;
-  } catch {
-    return null;
-  }
-}
-
-function formatEventDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "long",
-    timeStyle: "short",
-    timeZone: "America/Sao_Paulo",
-  }).format(date);
+  return (
+    <section className="invite-state" aria-labelledby="invite-error-title">
+      <span className="invite-state-icon" aria-hidden="true">♡</span>
+      <p className="eyebrow">Convite Momiz</p>
+      <h1 id="invite-error-title">
+        {transient ? "Não foi possível carregar o convite" : "Não encontramos este convite"}
+      </h1>
+      <p>
+        {transient
+          ? "Tivemos uma instabilidade. Tente novamente em alguns instantes."
+          : "Confira se o link recebido está completo ou peça um novo convite ao organizador."}
+      </p>
+      <Link className="button primary" href="/">
+        {transient ? "Ir para o início" : "Conhecer o Momiz"}
+      </Link>
+    </section>
+  );
 }
 
 export async function generateMetadata({ params }: InvitePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const details = await getEventDetails(slug);
+  const result = await getEventDetails(slug);
+  const details = result.ok ? result.data : null;
   const title = details?.theme?.heroTitle || details?.event.title || "Convite especial";
   const description =
     details?.theme?.heroSubtitle ||
@@ -92,23 +75,14 @@ export async function generateMetadata({ params }: InvitePageProps): Promise<Met
 export default async function InvitePage({ params, searchParams }: InvitePageProps) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const guest = firstValue(query.guest);
-  const details = await getEventDetails(slug, guest);
+  const result = await getEventDetails(slug, guest);
   const deepLink = `momiz://convite/${encodeURIComponent(slug)}${
     guest ? `?guest=${encodeURIComponent(guest)}` : ""
   }`;
 
-  if (!details) {
-    return (
-      <section className="invite-state" aria-labelledby="invite-error-title">
-        <span className="invite-state-icon" aria-hidden="true">♡</span>
-        <p className="eyebrow">Convite Momiz</p>
-        <h1 id="invite-error-title">Não encontramos este convite</h1>
-        <p>Confira se o link recebido está completo ou peça um novo convite ao organizador.</p>
-        <Link className="button primary" href="/">Conhecer o Momiz</Link>
-      </section>
-    );
-  }
+  if (!result.ok) return <InviteError result={result} />;
 
+  const details = result.data;
   const { event, address, theme } = details;
   const title = theme?.heroTitle || event.title;
   const subtitle = theme?.heroSubtitle || event.subtitle || "Você está convidado";
