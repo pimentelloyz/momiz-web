@@ -324,6 +324,13 @@ img { display: block; max-width: 100%; }
 .invite-state h1 { font-size: clamp(42px, 7vw, 62px); }
 .invite-state > p:not(.eyebrow) { max-width: 520px; margin: 0 0 30px; color: var(--muted); line-height: 1.7; }
 .invite-state .eyebrow { margin-top: 26px; }
+.fallback-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
 
 @media (max-width: 900px) {
   .site-header nav > a:not(.nav-cta) { display: none; }
@@ -371,6 +378,8 @@ img { display: block; max-width: 100%; }
   .invite-detail-grid { grid-template-columns: 1fr; }
   .invite-actions { flex-direction: column; }
   .invite-actions .button { width: 100%; text-align: center; }
+  .fallback-actions { width: 100%; flex-direction: column; }
+  .fallback-actions .button { width: 100%; }
 }
 
 @media (max-width: 420px) {

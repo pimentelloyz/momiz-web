@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { buildInviteDeepLink } from "../../../lib/deep-links";
 import type { EventDetailsLoadResult } from "../../../lib/event-details-loader";
 import { getEventDetails } from "../../../lib/event-details-server";
 import { firstValue, formatEventDate, safeColor } from "../../../lib/invite-helpers";
@@ -61,9 +62,7 @@ export default async function InvitePage({ params, searchParams }: InvitePagePro
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const guest = firstValue(query.guest);
   const result = await getEventDetails(slug, guest);
-  const deepLink = `momiz://convite/${encodeURIComponent(slug)}${
-    guest ? `?guest=${encodeURIComponent(guest)}` : ""
-  }`;
+  const deepLink = buildInviteDeepLink(slug, guest);
 
   if (!result.ok) return <InviteError result={result} />;
 
