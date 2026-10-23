@@ -1,0 +1,43 @@
+import { NextRequest } from "next/server";
+import { adminApiFetch } from "../../../../../lib/admin/admin-session";
+
+const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
+const allowed = [
+  new RegExp("^users$", "i"),
+  new RegExp(`^users/${uuid}/access$`, "i"),
+  new RegExp(`^users/${uuid}/demos$`, "i"),
+  new RegExp(`^users/${uuid}/demos/${uuid}$`, "i"),
+  new RegExp(`^users/${uuid}/demos/${uuid}/revoke$`, "i"),
+];
+
+function sameOrigin(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  return !origin || origin === request.nextUrl.origin;
+}
+
+async function forward(request: NextRequest, context: RouteContext<"/admin/api/access/[...path]">) {
+  const { path } = await context.params;
+  const relativePath = path.join("/");
+  if (!allowed.some((pattern) => pattern.test(relativePath))) {
+    return Response.json({ message: "Rota administrativa inválida." }, { status: 404 });
+  }
+  if (request.method !== "GET" && !sameOrigin(request)) {
+    return Response.json({ message: "Origem inválida." }, { status: 403 });
+  }
+
+  const query = request.nextUrl.search;
+  const body = request.method === "GET" ? undefined : await request.text();
+  const upstream = await adminApiFetch(`/api/admin/${relativePath}${query}`, {
+    method: request.method,
+    body: body || undefined,
+  });
+  const responseBody = await upstream.text();
+  return new Response(responseBody || null, {
+    status: upstream.status,
+    headers: { "content-type": upstream.headers.get("content-type") || "application/json" },
+  });
+}
+
+export const GET = forward;
+export const POST = forward;
+export const PATCH = forward;

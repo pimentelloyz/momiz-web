@@ -1,4 +1,5 @@
 import "server-only";
+export { LEGAL_LINKS } from "./public-site-config";
 
 const defaultSiteUrl = "https://momiz.com.br";
 const defaultApiBaseUrl =
@@ -16,10 +17,3 @@ export const siteConfig = {
 } as const;
 
 export const LEGAL_VERSION = "12 de outubro de 2026";
-
-export const LEGAL_LINKS = [
-  { href: "/suporte", label: "Central de suporte", shortLabel: "Suporte" },
-  { href: "/termos", label: "Termos de uso", shortLabel: "Termos" },
-  { href: "/privacidade", label: "Privacidade", shortLabel: "Privacidade" },
-  { href: "/excluir-conta", label: "Excluir conta", shortLabel: "Excluir conta" },
-] as const;

@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Playfair_Display } from "next/font/google";
-import Image from "next/image";
-import Link from "next/link";
-import { LEGAL_LINKS, SITE_URL, siteConfig } from "../lib/site-config";
+import { SITE_URL, siteConfig } from "../lib/site-config";
+import { SiteChrome } from "./site-chrome";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -61,29 +60,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="pt-BR">
       <body className={`${manrope.variable} ${playfair.variable}`}>
-        <header className="site-header">
-          <Link href="/" className="brand" aria-label="Momiz — início">
-            <Image src="/brand/momiz-logo-horizontal.png" alt="Momiz" width={1600} height={533} priority />
-          </Link>
-          <nav aria-label="Navegação principal">
-            <Link href="/#como-funciona">Como funciona</Link>
-            <Link href="/#recursos">Recursos</Link>
-            <Link href="/#baixar" className="nav-cta">Baixar o app</Link>
-          </nav>
-        </header>
-        <main>{children}</main>
-        <footer className="site-footer">
-          <div>
-            <Image src="/brand/momiz-logo-horizontal.png" alt="Momiz" width={1600} height={533} />
-            <p>Momentos importantes merecem leveza.</p>
-          </div>
-          <div className="footer-links">
-            {LEGAL_LINKS.map((link) => (
-              <Link key={link.href} href={link.href}>{link.label}</Link>
-            ))}
-          </div>
-          <small>© {new Date().getFullYear()} Momiz. Todos os direitos reservados.</small>
-        </footer>
+        <SiteChrome>{children}</SiteChrome>
       </body>
     </html>
   );
