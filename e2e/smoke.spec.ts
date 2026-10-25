@@ -74,3 +74,15 @@ test("fallback de evento expõe deep link e bloqueia indexação", async ({ page
     /noindex.*nofollow|nofollow.*noindex/,
   );
 });
+
+test("portal profissional apresenta login isolado do site público", async ({ page }) => {
+  await page.goto("/profissional/login");
+
+  await expect(page.getByRole("heading", { level: 1, name: "Acesso profissional" })).toBeVisible();
+  await expect(page.getByText(/Consulte pacientes e compromissos autorizados/)).toBeVisible();
+  await expect(page.locator("header.site-header")).toHaveCount(0);
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    /noindex.*nofollow|nofollow.*noindex/,
+  );
+});

@@ -7,7 +7,9 @@ import { LEGAL_LINKS } from "../lib/public-site-config";
 
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  if (pathname.startsWith("/admin")) return <main>{children}</main>;
+  if (pathname.startsWith("/admin") || pathname.startsWith("/profissional")) {
+    return <main>{children}</main>;
+  }
 
   return (
     <>

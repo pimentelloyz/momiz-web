@@ -1,0 +1,494 @@
+.loginPage,
+.pendingPage,
+.portalPage,
+.centerState {
+  min-height: 100vh;
+  color: #213128;
+  background: #f7f3ed;
+}
+
+.loginPage,
+.pendingPage,
+.centerState {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.loginCard,
+.pendingCard {
+  width: min(480px, 100%);
+  padding: clamp(28px, 6vw, 46px);
+  border: 1px solid #ded5cc;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(53, 75, 61, 0.12);
+}
+
+.loginLogo {
+  width: 132px;
+  height: auto;
+  margin-bottom: 28px;
+}
+
+.loginCard h1,
+.pendingCard h1,
+.welcome h1,
+.sectionHeading h2 {
+  margin: 8px 0;
+  letter-spacing: -0.04em;
+}
+
+.loginCard p,
+.pendingCard p,
+.welcome p,
+.emptyState p {
+  color: #667169;
+  line-height: 1.6;
+}
+
+.kicker {
+  color: #506e5c;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.form {
+  display: grid;
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.form label,
+.filters label {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.form input,
+.filters input,
+.filters select {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 13px;
+  color: #213128;
+  border: 1px solid #cec5bc;
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+}
+
+.form input:focus,
+.filters input:focus,
+.filters select:focus {
+  outline: 3px solid rgba(77, 105, 88, 0.16);
+  border-color: #4d6958;
+}
+
+.primaryButton,
+.secondaryButton,
+.googleButton,
+.headerButton,
+.exportButton {
+  min-height: 44px;
+  padding: 11px 18px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primaryButton {
+  color: #fff;
+  background: #4d6958;
+}
+
+.secondaryButton,
+.headerButton,
+.exportButton {
+  color: #4d6958;
+  border-color: #aeb9b0;
+  background: #fff;
+}
+
+.googleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #213128;
+  border-color: #cec5bc;
+  background: #fff;
+}
+
+.googleButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.googleButton:disabled,
+.exportButton:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.loginDivider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #818a83;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.loginDivider::before,
+.loginDivider::after {
+  height: 1px;
+  flex: 1;
+  background: #e5ddd5;
+  content: "";
+}
+
+.securityNotice,
+.feedback {
+  display: grid;
+  gap: 5px;
+  padding: 14px 16px;
+  color: #304638;
+  border: 1px solid #c9d8ce;
+  border-radius: 14px;
+  background: #e7eee8;
+}
+
+.securityNotice span {
+  color: #58685e;
+  font-size: 14px;
+}
+
+.error {
+  margin: 0;
+  padding: 12px 14px;
+  color: #8f2f28;
+  border-radius: 10px;
+  background: #fff0ee;
+  font-size: 13px;
+}
+
+.pendingCard {
+  display: grid;
+  gap: 14px;
+}
+
+.pendingCard .secondaryButton {
+  margin-top: 10px;
+}
+
+.portalHeader {
+  min-height: 92px;
+  padding: 16px clamp(20px, 5vw, 72px);
+  display: grid;
+  grid-template-columns: 150px 1fr auto;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 1px solid #ded5cc;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.portalHeader > img {
+  width: 132px;
+  height: auto;
+}
+
+.profileSummary {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.profileSummary > div:nth-child(2) {
+  display: grid;
+  gap: 2px;
+}
+
+.profileSummary span,
+.patientInfo span,
+.appointmentCard > span:not(.statusBadge) {
+  color: #6b756e;
+  font-size: 13px;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  border-radius: 50%;
+  background: #587563;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.portalMain {
+  width: min(1480px, 100%);
+  margin: 0 auto;
+  padding: clamp(24px, 4vw, 54px);
+}
+
+.welcome {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.welcome h1 {
+  max-width: 720px;
+  font-size: clamp(30px, 4vw, 52px);
+  line-height: 1.08;
+}
+
+.feedback {
+  margin-top: 22px;
+}
+
+.metrics {
+  margin: 32px 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.metrics article {
+  min-height: 132px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid #ded5cc;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.metrics span {
+  color: #67726a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.metrics strong {
+  font-size: 36px;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.75fr) minmax(520px, 1.4fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.panel {
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid #ded5cc;
+  border-radius: 24px;
+  background: #fff;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sectionHeading > span {
+  min-width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: #4d6958;
+  border-radius: 50%;
+  background: #e5ede6;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.patientList,
+.appointmentList {
+  margin-top: 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.patientCard {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #e4ddd5;
+  border-radius: 16px;
+}
+
+.patientInfo {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.patientInfo span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusBadge {
+  width: fit-content;
+  padding: 6px 9px;
+  color: #43604d;
+  border-radius: 999px;
+  background: #e5ede6;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.filters {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: 1.4fr repeat(2, 1fr) repeat(2, minmax(130px, 0.8fr));
+  gap: 10px;
+}
+
+.filters input,
+.filters select {
+  min-height: 42px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.filterSummary {
+  margin: 17px 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #6b756e;
+  font-size: 13px;
+}
+
+.filterSummary button {
+  padding: 0;
+  color: #4d6958;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.appointmentCard {
+  padding: 17px;
+  display: grid;
+  grid-template-columns: minmax(140px, 0.8fr) minmax(180px, 1.2fr) minmax(160px, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid #e4ddd5;
+  border-radius: 16px;
+}
+
+.appointmentCard time {
+  color: #4d6958;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.emptyState {
+  margin-top: 20px;
+  padding: 32px 18px;
+  text-align: center;
+  border-radius: 16px;
+  background: #f7f4ef;
+}
+
+.emptyState p {
+  margin-bottom: 0;
+}
+
+.centerState {
+  align-content: center;
+  text-align: center;
+}
+
+.centerState p {
+  color: #667169;
+}
+
+.spinner {
+  width: 38px;
+  height: 38px;
+  margin: 0 auto;
+  border: 4px solid #d9e1db;
+  border-top-color: #4d6958;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1100px) {
+  .contentGrid { grid-template-columns: 1fr; }
+  .filters { grid-template-columns: repeat(3, 1fr); }
+  .appointmentCard { grid-template-columns: 1fr 1.2fr 1fr auto; }
+}
+
+@media (max-width: 760px) {
+  .portalHeader {
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+  }
+  .portalHeader > img { width: 108px; }
+  .profileSummary { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; }
+  .headerButton { grid-column: 2; grid-row: 1; }
+  .welcome { align-items: stretch; flex-direction: column; }
+  .welcome .secondaryButton { width: 100%; }
+  .metrics { grid-template-columns: repeat(2, 1fr); }
+  .filters { grid-template-columns: 1fr 1fr; }
+  .filters label:first-child { grid-column: 1 / -1; }
+  .appointmentCard { grid-template-columns: 1fr auto; }
+  .appointmentCard > span:not(.statusBadge) { grid-column: 1 / -1; }
+}
+
+@media (max-width: 480px) {
+  .loginPage,
+  .pendingPage { padding: 12px; }
+  .loginCard,
+  .pendingCard { padding: 26px 20px; border-radius: 22px; }
+  .portalMain { padding: 24px 14px 40px; }
+  .metrics { gap: 9px; }
+  .metrics article { min-height: 112px; padding: 16px; }
+  .metrics strong { font-size: 30px; }
+  .panel { padding: 20px 14px; }
+  .sectionHeading { align-items: flex-start; }
+  .exportButton { padding: 9px 11px; }
+  .filters { grid-template-columns: 1fr; }
+  .filters label:first-child { grid-column: auto; }
+  .patientCard { grid-template-columns: auto 1fr; }
+  .patientCard .statusBadge { grid-column: 2; }
+  .appointmentCard { grid-template-columns: 1fr; }
+  .appointmentCard > span:not(.statusBadge) { grid-column: auto; }
+}
