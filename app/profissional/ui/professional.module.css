@@ -691,6 +691,14 @@
   cursor: pointer;
 }
 
+.memberCard > .memberActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
 .textButton:disabled {
   opacity: 0.5;
   cursor: wait;

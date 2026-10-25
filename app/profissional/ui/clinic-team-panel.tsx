@@ -63,6 +63,7 @@ const auditActionLabels: Record<string, string> = {
   INVITATION_EXPIRED: "Convite expirou automaticamente",
   MEMBER_SUSPENDED: "Suspendeu um membro",
   MEMBER_REACTIVATED: "Reativou um membro",
+  OWNER_TRANSFERRED: "Transferiu a propriedade da clínica",
 };
 
 async function clinicRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -144,6 +145,7 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
   const occupiedSeats = team?.members.filter((member) => member.status === "ACTIVE").length || 0;
   const reservedSeats = team?.invitations.length || 0;
   const canManage = ["OWNER", "ADMIN"].includes(team?.membership.role || "");
+  const isOwner = team?.membership.role === "OWNER";
   const availableSeats = Math.max((team?.clinic.seatLimit || 0) - occupiedSeats - reservedSeats, 0);
 
   async function createClinic(event: FormEvent<HTMLFormElement>) {
@@ -228,6 +230,22 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
     finally { setBusy(""); }
   }
 
+  async function transferOwnership(member: Member) {
+    if (!selectedId || member.status !== "ACTIVE") return;
+    const displayName = member.professionalProfile?.displayName || member.professionalProfile?.user?.name || "este membro";
+    if (!window.confirm(`Transferir a propriedade para ${displayName}? Você passará a ser administrador da clínica.`)) return;
+    setBusy(member.id); setError(""); setFeedback("");
+    try {
+      await clinicRequest(`/${selectedId}/members/${member.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ action: "transferOwnership" }),
+      });
+      await Promise.all([loadClinics(), loadTeam(selectedId)]);
+      setFeedback(`Propriedade transferida para ${displayName}.`);
+    } catch (operationError) { handleError(operationError); }
+    finally { setBusy(""); }
+  }
+
   async function copyLink() {
     await navigator.clipboard.writeText(generatedLink);
     setFeedback("Link copiado com segurança.");
@@ -294,7 +312,10 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
                   <article className={styles.memberCard} key={member.id}>
                     <div><strong>{member.professionalProfile?.displayName || member.professionalProfile?.user?.name || "Profissional"}</strong><span>{professionLabels[member.professionalProfile?.primaryProfession || ""] || "Profissional"} · {member.role}</span></div>
                     <span className={styles.statusBadge}>{member.status === "ACTIVE" ? "Ativo" : "Suspenso"}</span>
-                    {canManage && member.role !== "OWNER" && <button className={styles.textButton} disabled={busy === member.id} onClick={() => void updateMember(member)} type="button">{member.status === "ACTIVE" ? "Suspender" : "Reativar"}</button>}
+                    {canManage && member.role !== "OWNER" && <div className={styles.memberActions}>
+                      {isOwner && member.status === "ACTIVE" && <button className={styles.textButton} disabled={busy === member.id} onClick={() => void transferOwnership(member)} type="button">Transferir propriedade</button>}
+                      <button className={styles.textButton} disabled={busy === member.id} onClick={() => void updateMember(member)} type="button">{member.status === "ACTIVE" ? "Suspender" : "Reativar"}</button>
+                    </div>}
                   </article>
                 ))}</div></div>
                 <div><h3>Convites pendentes</h3>{team.invitations.length === 0 ? <p className={styles.muted}>Nenhum convite pendente.</p> : <div className={styles.memberList}>{team.invitations.map((invitation) => (
