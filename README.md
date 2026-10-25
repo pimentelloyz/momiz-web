@@ -36,6 +36,11 @@ página pública de convite e `SUPPORT_EMAIL` define o canal exibido nas página
 legais. Essas variáveis são server-only. Em desenvolvimento, use
 `http://localhost:3020` para a API; na Vercel, use `https://api.momiz.com.br`.
 
+O painel administrativo usa `FIREBASE_WEB_API_KEY`, `FIREBASE_PROJECT_ID` e
+`FIREBASE_AUTH_DOMAIN` para autenticação por senha e Google. O Firebase apenas
+prova a identidade; a allowlist da API continua sendo a autoridade que concede
+acesso administrativo.
+
 ## Deploy na Vercel
 
 1. Importe este repositório na Vercel ou execute `vercel link`.

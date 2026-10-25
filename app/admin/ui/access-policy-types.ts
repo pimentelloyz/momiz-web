@@ -11,7 +11,7 @@ export type AccessPolicy = {
   id: string;
   version: number;
   basedOnVersion: number | null;
-  status: "DRAFT" | "PUBLISHED" | "SUPERSEDED";
+  status: "DRAFT" | "PUBLISHED" | "SUPERSEDED" | "DISCARDED";
   reason: string;
   createdByUserId: string | null;
   publishedByUserId: string | null;

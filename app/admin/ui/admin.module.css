@@ -12,8 +12,13 @@
 .primaryButton, .secondaryButton, .dangerButton { min-height: 44px; padding: 11px 18px; border: 1px solid transparent; border-radius: 12px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
 .primaryButton { color: #fff; background: #4d6958; }
 .secondaryButton { color: #4d6958; border-color: #aeb9b0; background: #fff; }
+.googleButton { min-height: 48px; padding: 11px 18px; display: flex; align-items: center; justify-content: center; gap: 10px; color: #223027; border: 1px solid #cfc5bc; border-radius: 12px; background: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.googleButton svg { width: 20px; height: 20px; flex: 0 0 auto; }
+.googleButton:disabled { opacity: .6; cursor: wait; }
+.loginDivider { display: flex; align-items: center; gap: 12px; color: #7a847d; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.loginDivider::before, .loginDivider::after { height: 1px; flex: 1; background: #e4ddd5; content: ""; }
 .dangerButton { color: #a13931; border-color: #e7b8b4; background: #fff5f3; }
-.primaryButton:disabled { opacity: .6; cursor: wait; }
+.primaryButton:disabled, .secondaryButton:disabled, .dangerButton:disabled { opacity: .6; cursor: wait; }
 .error { margin: 0; padding: 12px 14px; color: #8f2f28; border-radius: 10px; background: #fff0ee; font-size: 13px; }
 .adminHeader { min-height: 104px; padding: 24px clamp(24px, 5vw, 72px); display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid #ded5cc; background: #fff; }
 .adminHeader h1 { font-size: clamp(25px, 3vw, 36px); }

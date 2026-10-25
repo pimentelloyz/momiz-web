@@ -62,6 +62,7 @@ export function AccessPackagePolicyPanel({ onMessage, onSessionExpired }: Props)
     changes: PolicyChange[];
   } | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [discardingId, setDiscardingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
@@ -117,6 +118,7 @@ export function AccessPackagePolicyPanel({ onMessage, onSessionExpired }: Props)
   async function createDraft(sourceId?: string) {
     setBusy(true);
     setConfirming(false);
+    setDiscardingId(null);
     try {
       const created = (await adminApi(
         sourceId
@@ -149,7 +151,32 @@ export function AccessPackagePolicyPanel({ onMessage, onSessionExpired }: Props)
     setChanges([]);
     setImpact(null);
     setConfirming(false);
+    setDiscardingId(null);
     onMessage(`Rascunho ${selected.version} retomado.`);
+  }
+
+  async function discardDraft(selected: AccessPolicy) {
+    setBusy(true);
+    try {
+      await adminApi(`access/package-policies/drafts/${selected.id}`, {
+        method: "DELETE",
+      });
+      if (draft?.id === selected.id) {
+        setDraft(null);
+        setMatrix(null);
+        setValidation(null);
+        setChanges([]);
+        setImpact(null);
+        setConfirming(false);
+      }
+      setDiscardingId(null);
+      onMessage(`Rascunho ${selected.version} descartado.`);
+      await load();
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function inspectHistory(selected: AccessPolicyHistoryItem) {
@@ -202,7 +229,9 @@ export function AccessPackagePolicyPanel({ onMessage, onSessionExpired }: Props)
       const saved = await saveDraft();
       if (!saved) return;
       const [validationResult, diffResult, impactResult] = await Promise.all([
-        adminApi(`access/package-policies/drafts/${saved.id}/validate`) as Promise<PolicyValidation>,
+        adminApi(`access/package-policies/drafts/${saved.id}/validate`, {
+          method: "POST",
+        }) as Promise<PolicyValidation>,
         adminApi(`access/package-policies/${saved.id}/diff`) as Promise<{ changes: PolicyChange[] }>,
         adminApi(`access/package-policies/${saved.id}/impact-preview`) as Promise<PolicyImpact>,
       ]);
@@ -318,7 +347,19 @@ export function AccessPackagePolicyPanel({ onMessage, onSessionExpired }: Props)
                   <span>{item.reason}</span>
                   <small>Criado em {displayDate(item.createdAt)}</small>
                 </div>
-                <button className={styles.secondaryButton} disabled={busy} onClick={() => resumeDraft(item)}>Continuar</button>
+                <div className={styles.historyActions}>
+                  {discardingId === item.id ? (
+                    <>
+                      <button className={styles.secondaryButton} disabled={busy} onClick={() => setDiscardingId(null)}>Cancelar</button>
+                      <button className={styles.dangerButton} disabled={busy} onClick={() => discardDraft(item)}>Confirmar descarte</button>
+                    </>
+                  ) : (
+                    <>
+                      <button className={styles.dangerButton} disabled={busy} onClick={() => setDiscardingId(item.id)}>Descartar</button>
+                      <button className={styles.secondaryButton} disabled={busy} onClick={() => resumeDraft(item)}>Continuar</button>
+                    </>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
@@ -367,7 +408,20 @@ export function AccessPackagePolicyPanel({ onMessage, onSessionExpired }: Props)
           </table>
         </div>
 
-        {editable && <div className={styles.actions}><button className={styles.secondaryButton} disabled={busy} onClick={save}>Salvar rascunho</button><button className={styles.primaryButton} disabled={busy} onClick={reviewPublication}>Revisar publicação</button></div>}
+        {editable && draft && (
+          <div className={styles.actions}>
+            {discardingId === draft.id ? (
+              <>
+                <button className={styles.secondaryButton} disabled={busy} onClick={() => setDiscardingId(null)}>Cancelar descarte</button>
+                <button className={styles.dangerButton} disabled={busy} onClick={() => discardDraft(draft)}>Confirmar descarte</button>
+              </>
+            ) : (
+              <button className={styles.dangerButton} disabled={busy} onClick={() => setDiscardingId(draft.id)}>Descartar rascunho</button>
+            )}
+            <button className={styles.secondaryButton} disabled={busy} onClick={save}>Salvar rascunho</button>
+            <button className={styles.primaryButton} disabled={busy} onClick={reviewPublication}>Revisar publicação</button>
+          </div>
+        )}
       </section>
 
       {validation && (
