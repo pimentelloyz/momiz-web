@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { adminApi, jsonRequest } from "./admin-api-client";
 import styles from "./admin.module.css";
 
@@ -49,6 +49,38 @@ type ProfessionalProfile = {
   }>;
 };
 
+type CommunicationReportStatus = "OPEN" | "RESOLVED" | "DISMISSED";
+
+type CommunicationReport = {
+  id: string;
+  category: string;
+  details: string | null;
+  status: CommunicationReportStatus;
+  createdAt: string;
+  resolvedAt: string | null;
+  resolutionNote: string | null;
+  patient: { id: string; name: string; email: string | null };
+  reporter: { id: string; name: string; email: string | null };
+  resolvedBy: { id: string; name: string; email: string | null } | null;
+  message: {
+    id: string;
+    content: string;
+    authorUserId: string;
+    createdAt: string;
+  } | null;
+  relationship: {
+    id: string;
+    status: string;
+    communicationBlockedAt: string | null;
+    professionalProfile: {
+      id: string;
+      displayName: string;
+      primaryProfession: string;
+      user: { id: string; name: string; email: string | null };
+    };
+  };
+};
+
 const statusLabels: Record<VerificationStatus, string> = {
   DRAFT: "Rascunho",
   PENDING_VERIFICATION: "Aguardando análise",
@@ -64,6 +96,15 @@ const professionLabels: Record<string, string> = {
   DOULA: "Doula",
   OBSTETRIC_NURSE: "Enfermeira obstetra",
   PELVIC_PHYSIOTHERAPIST: "Fisioterapeuta pélvica",
+};
+
+const reportCategoryLabels: Record<string, string> = {
+  HARASSMENT: "Assédio ou intimidação",
+  INAPPROPRIATE_CONTENT: "Conteúdo inadequado",
+  PRIVACY_CONCERN: "Privacidade ou uso indevido de dados",
+  PROFESSIONAL_CONDUCT: "Conduta profissional",
+  SPAM: "Spam ou abordagem comercial",
+  OTHER: "Outro motivo",
 };
 
 function formatDate(value: string | null) {
@@ -88,11 +129,20 @@ export function ProfessionalCareReviewPanel({
   const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState(false);
   const [openingCredential, setOpeningCredential] = useState<string | null>(null);
-  const [operations, setOperations] = useState({ active: 0, paused: 0, auditEvents: 0 });
+  const [operations, setOperations] = useState({ active: 0, paused: 0, auditEvents: 0, openReports: 0 });
+  const [reportStatus, setReportStatus] = useState<CommunicationReportStatus>("OPEN");
+  const [reports, setReports] = useState<CommunicationReport[]>([]);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [resolutionNote, setResolutionNote] = useState("");
+  const [resolvingReport, setResolvingReport] = useState(false);
 
   const selected = useMemo(
     () => profiles.find((profile) => profile.id === selectedId) ?? profiles[0] ?? null,
     [profiles, selectedId],
+  );
+  const selectedReport = useMemo(
+    () => reports.find((report) => report.id === selectedReportId) ?? reports[0] ?? null,
+    [reports, selectedReportId],
   );
 
   function applyProfiles(nextProfiles: ProfessionalProfile[]) {
@@ -151,20 +201,94 @@ export function ProfessionalCareReviewPanel({
     Promise.all([
       adminApi("care/relationships"),
       adminApi("care/audit-logs"),
-    ]).then(([relationshipData, auditData]) => {
+      adminApi("care/communication-reports?status=OPEN"),
+    ]).then(([relationshipData, auditData, reportData]) => {
       if (!active) return;
       const relationships = (relationshipData as { relationships: Array<{ status: string }> }).relationships;
       const auditLogs = (auditData as { auditLogs: unknown[] }).auditLogs;
+      const openReports = (reportData as { reports: CommunicationReport[] }).reports;
       setOperations({
         active: relationships.filter((item) => item.status === "ACTIVE" || item.status === "READ_ONLY").length,
         paused: relationships.filter((item) => item.status === "PAUSED").length,
         auditEvents: auditLogs.length,
+        openReports: openReports.length,
       });
     }).catch((error: unknown) => {
       if (active && error instanceof Error && error.message === "SESSION_EXPIRED") onSessionExpired();
     });
     return () => { active = false; };
   }, [onSessionExpired]);
+
+  const loadReports = useCallback(async () => {
+    try {
+      const data = (await adminApi(
+        `care/communication-reports?status=${reportStatus}`,
+      )) as { reports: CommunicationReport[] };
+      setReports(data.reports);
+      setSelectedReportId((current) =>
+        data.reports.some((report) => report.id === current)
+          ? current
+          : data.reports[0]?.id ?? null,
+      );
+    } catch (error) {
+      if (error instanceof Error && error.message === "SESSION_EXPIRED") {
+        onSessionExpired();
+      } else {
+        onMessage(error instanceof Error ? error.message : "Não foi possível carregar as denúncias.");
+      }
+    }
+  }, [onMessage, onSessionExpired, reportStatus]);
+
+  useEffect(() => {
+    let active = true;
+    adminApi(`care/communication-reports?status=${reportStatus}`)
+      .then((data) => {
+        if (!active) return;
+        const nextReports = (data as { reports: CommunicationReport[] }).reports;
+        setReports(nextReports);
+        setSelectedReportId((current) =>
+          nextReports.some((report) => report.id === current)
+            ? current
+            : nextReports[0]?.id ?? null,
+        );
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        if (error instanceof Error && error.message === "SESSION_EXPIRED") {
+          onSessionExpired();
+        } else {
+          onMessage(error instanceof Error ? error.message : "Não foi possível carregar as denúncias.");
+        }
+      });
+    return () => { active = false; };
+  }, [onMessage, onSessionExpired, reportStatus]);
+
+  async function resolveReport(decision: "resolve" | "dismiss") {
+    if (!selectedReport) return;
+    if (!resolutionNote.trim()) {
+      onMessage("Registre a análise e as medidas tomadas antes de encerrar a denúncia.");
+      return;
+    }
+    setResolvingReport(true);
+    try {
+      await adminApi(
+        `care/communication-reports/${selectedReport.id}`,
+        jsonRequest("PATCH", { decision, resolutionNote: resolutionNote.trim() }),
+      );
+      onMessage(decision === "resolve" ? "Denúncia resolvida e auditada." : "Denúncia descartada com justificativa.");
+      setResolutionNote("");
+      await loadReports();
+      setOperations((current) => ({
+        ...current,
+        openReports: Math.max(0, current.openReports - 1),
+      }));
+    } catch (error) {
+      if (error instanceof Error && error.message === "SESSION_EXPIRED") onSessionExpired();
+      else onMessage(error instanceof Error ? error.message : "Não foi possível encerrar a denúncia.");
+    } finally {
+      setResolvingReport(false);
+    }
+  }
 
   async function review(decision: "verify" | "request_correction" | "reject" | "suspend") {
     if (!selected) return;
@@ -240,7 +364,84 @@ export function ProfessionalCareReviewPanel({
           <div><strong>{operations.active}</strong><span>vínculos ativos</span></div>
           <div><strong>{operations.paused}</strong><span>vínculos pausados</span></div>
           <div><strong>{operations.auditEvents}</strong><span>eventos recentes auditados</span></div>
+          <div><strong>{operations.openReports}</strong><span>denúncias abertas</span></div>
         </div>
+      </section>
+
+      <section className={styles.sectionCard}>
+        <div className={styles.sectionTitle}>
+          <div>
+            <span className={styles.kicker}>Segurança da comunicação</span>
+            <h2>Denúncias</h2>
+            <p>Analise o contexto somente para moderação e registre a decisão tomada.</p>
+          </div>
+          <label className={styles.statusFilter}>
+            Situação
+            <select value={reportStatus} onChange={(event) => setReportStatus(event.target.value as CommunicationReportStatus)}>
+              <option value="OPEN">Abertas</option>
+              <option value="RESOLVED">Resolvidas</option>
+              <option value="DISMISSED">Descartadas</option>
+            </select>
+          </label>
+        </div>
+        {reports.length === 0 ? (
+          <div className={styles.empty}><h3>Nenhuma denúncia nesta situação</h3><p>A fila está atualizada.</p></div>
+        ) : (
+          <div className={styles.careReviewGrid}>
+            <div className={styles.reviewList}>
+              {reports.map((report) => (
+                <button
+                  key={report.id}
+                  className={selectedReport?.id === report.id ? styles.reviewSelected : styles.reviewItem}
+                  onClick={() => { setSelectedReportId(report.id); setResolutionNote(""); }}
+                >
+                  <strong>{reportCategoryLabels[report.category] ?? report.category}</strong>
+                  <span>{report.patient.name} · {report.relationship.professionalProfile.displayName}</span>
+                  <small>{formatDate(report.createdAt)}</small>
+                </button>
+              ))}
+            </div>
+            {selectedReport && (
+              <div className={styles.reviewDetail}>
+                <div className={styles.reviewIdentity}>
+                  <div>
+                    <span className={styles.kicker}>{reportCategoryLabels[selectedReport.category] ?? selectedReport.category}</span>
+                    <h3>Relato de {selectedReport.reporter.name}</h3>
+                    <p>Paciente: {selectedReport.patient.name} · Profissional: {selectedReport.relationship.professionalProfile.displayName}</p>
+                  </div>
+                  <span className={styles.planBadge}>{selectedReport.status}</span>
+                </div>
+                <div className={styles.reviewBio}>
+                  <strong>Descrição</strong>
+                  <p>{selectedReport.details || "Nenhum detalhe adicional informado."}</p>
+                </div>
+                {selectedReport.message && (
+                  <div className={styles.reviewBio}>
+                    <strong>Mensagem denunciada · {formatDate(selectedReport.message.createdAt)}</strong>
+                    <p>{selectedReport.message.content}</p>
+                  </div>
+                )}
+                {selectedReport.status === "OPEN" ? (
+                  <div className={styles.reviewActions}>
+                    <label>
+                      Análise e medidas tomadas
+                      <textarea value={resolutionNote} onChange={(event) => setResolutionNote(event.target.value)} rows={4} maxLength={2000} />
+                    </label>
+                    <div className={styles.actions}>
+                      <button disabled={resolvingReport} className={styles.secondaryButton} onClick={() => void resolveReport("dismiss")}>Descartar com justificativa</button>
+                      <button disabled={resolvingReport} className={styles.primaryButton} onClick={() => void resolveReport("resolve")}>{resolvingReport ? "Salvando…" : "Marcar como resolvida"}</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.reviewBio}>
+                    <strong>Resolução · {formatDate(selectedReport.resolvedAt)}</strong>
+                    <p>{selectedReport.resolutionNote}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       <div className={styles.careReviewGrid}>
