@@ -129,7 +129,16 @@ export function ProfessionalCareReviewPanel({
   const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState(false);
   const [openingCredential, setOpeningCredential] = useState<string | null>(null);
-  const [operations, setOperations] = useState({ active: 0, paused: 0, auditEvents: 0, openReports: 0 });
+  const [operations, setOperations] = useState({
+    active: 0,
+    paused: 0,
+    expiring: 0,
+    blocked: 0,
+    auditEvents: 0,
+    deniedAuditEvents: 0,
+    openReports: 0,
+    pendingProfiles: 0,
+  });
   const [reportStatus, setReportStatus] = useState<CommunicationReportStatus>("OPEN");
   const [reports, setReports] = useState<CommunicationReport[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
@@ -198,20 +207,27 @@ export function ProfessionalCareReviewPanel({
 
   useEffect(() => {
     let active = true;
-    Promise.all([
-      adminApi("care/relationships"),
-      adminApi("care/audit-logs"),
-      adminApi("care/communication-reports?status=OPEN"),
-    ]).then(([relationshipData, auditData, reportData]) => {
+    adminApi("care/metrics").then((data) => {
       if (!active) return;
-      const relationships = (relationshipData as { relationships: Array<{ status: string }> }).relationships;
-      const auditLogs = (auditData as { auditLogs: unknown[] }).auditLogs;
-      const openReports = (reportData as { reports: CommunicationReport[] }).reports;
+      const metrics = (data as { metrics: {
+        activeRelationships: number;
+        pausedRelationships: number;
+        expiringRelationships: number;
+        blockedCommunications: number;
+        openReports: number;
+        pendingProfiles: number;
+        auditEventsLast24h: number;
+        deniedAuditEventsLast24h: number;
+      } }).metrics;
       setOperations({
-        active: relationships.filter((item) => item.status === "ACTIVE" || item.status === "READ_ONLY").length,
-        paused: relationships.filter((item) => item.status === "PAUSED").length,
-        auditEvents: auditLogs.length,
-        openReports: openReports.length,
+        active: metrics.activeRelationships,
+        paused: metrics.pausedRelationships,
+        expiring: metrics.expiringRelationships,
+        blocked: metrics.blockedCommunications,
+        auditEvents: metrics.auditEventsLast24h,
+        deniedAuditEvents: metrics.deniedAuditEventsLast24h,
+        openReports: metrics.openReports,
+        pendingProfiles: metrics.pendingProfiles,
       });
     }).catch((error: unknown) => {
       if (active && error instanceof Error && error.message === "SESSION_EXPIRED") onSessionExpired();
@@ -363,8 +379,12 @@ export function ProfessionalCareReviewPanel({
         <div className={styles.impactGrid}>
           <div><strong>{operations.active}</strong><span>vínculos ativos</span></div>
           <div><strong>{operations.paused}</strong><span>vínculos pausados</span></div>
-          <div><strong>{operations.auditEvents}</strong><span>eventos recentes auditados</span></div>
+          <div><strong>{operations.expiring}</strong><span>expiram em até 7 dias</span></div>
+          <div><strong>{operations.blocked}</strong><span>comunicações bloqueadas</span></div>
+          <div><strong>{operations.pendingProfiles}</strong><span>perfis aguardando análise</span></div>
           <div><strong>{operations.openReports}</strong><span>denúncias abertas</span></div>
+          <div><strong>{operations.auditEvents}</strong><span>acessos auditados em 24h</span></div>
+          <div><strong>{operations.deniedAuditEvents}</strong><span>acessos negados em 24h</span></div>
         </div>
       </section>
 
