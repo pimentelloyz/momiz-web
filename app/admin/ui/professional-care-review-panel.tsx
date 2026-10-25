@@ -24,6 +24,7 @@ type Credential = {
   status: string;
   reviewReason: string | null;
   documentFileName: string | null;
+  renewalOfCredentialId: string | null;
 };
 
 type ProfessionalProfile = {
@@ -155,6 +156,13 @@ export function ProfessionalCareReviewPanel({
     () => reports.find((report) => report.id === selectedReportId) ?? reports[0] ?? null,
     [reports, selectedReportId],
   );
+  const pendingRenewals = useMemo(
+    () => selected?.credentials.filter(
+      (credential) => credential.status === "PENDING" && Boolean(credential.renewalOfCredentialId),
+    ) ?? [],
+    [selected],
+  );
+  const isRenewalReview = selected?.verificationStatus === "VERIFIED" && pendingRenewals.length > 0;
 
   function applyProfiles(nextProfiles: ProfessionalProfile[]) {
     setProfiles(nextProfiles);
@@ -326,9 +334,13 @@ export function ProfessionalCareReviewPanel({
       );
       onMessage(
         decision === "verify"
-          ? "Perfil verificado e vínculos pendentes ativados."
+          ? isRenewalReview
+            ? "Renovação aprovada. A nova credencial assumiu a vigência sem interromper os vínculos."
+            : "Perfil verificado e vínculos pendentes ativados."
           : decision === "request_correction"
-            ? "Correção solicitada ao profissional."
+            ? isRenewalReview
+              ? "Correção solicitada. A credencial vigente e os vínculos permanecem ativos."
+              : "Correção solicitada ao profissional."
             : decision === "suspend"
               ? "Perfil suspenso e vínculos ativos pausados."
               : "Cadastro profissional rejeitado.",
@@ -516,7 +528,10 @@ export function ProfessionalCareReviewPanel({
                 <div className={styles.credentialList}>
                   {selected.credentials.length === 0 ? <p>Nenhuma credencial informada.</p> : selected.credentials.map((credential) => (
                     <article key={credential.id}>
-                      <div><strong>{credential.type}</strong><span>{credential.status}</span></div>
+                      <div>
+                        <strong>{credential.type}</strong>
+                        <span>{credential.renewalOfCredentialId ? `RENOVAÇÃO · ${credential.status}` : credential.status}</span>
+                      </div>
                       <p>{credential.registrationNumber || "Sem número"}{credential.jurisdiction ? ` · ${credential.jurisdiction}` : ""}</p>
                       <small>{credential.specialty || credential.issuer || "Sem especialidade informada"}</small>
                       {credential.documentFileName && (
@@ -544,8 +559,14 @@ export function ProfessionalCareReviewPanel({
                   ))}
                 </div>
               </div>
-              {selected.verificationStatus === "PENDING_VERIFICATION" && (
+              {(selected.verificationStatus === "PENDING_VERIFICATION" || isRenewalReview) && (
                 <div className={styles.reviewActions}>
+                  {isRenewalReview && (
+                    <div className={styles.reviewBio}>
+                      <strong>Renovação sem interrupção</strong>
+                      <p>A credencial atual permanece válida até a aprovação da nova versão. Correção ou rejeição não pausa o perfil nem os vínculos.</p>
+                    </div>
+                  )}
                   <label>
                     Motivo ou orientação ao profissional
                     <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} placeholder="Obrigatório para correção ou rejeição" />
@@ -553,11 +574,11 @@ export function ProfessionalCareReviewPanel({
                   <div className={styles.actions}>
                     <button disabled={reviewing} className={styles.dangerButton} onClick={() => void review("reject")}>Rejeitar</button>
                     <button disabled={reviewing} className={styles.secondaryButton} onClick={() => void review("request_correction")}>Solicitar correção</button>
-                    <button disabled={reviewing} className={styles.primaryButton} onClick={() => void review("verify")}>{reviewing ? "Salvando…" : "Verificar perfil"}</button>
+                    <button disabled={reviewing} className={styles.primaryButton} onClick={() => void review("verify")}>{reviewing ? "Salvando…" : isRenewalReview ? "Aprovar renovação" : "Verificar perfil"}</button>
                   </div>
                 </div>
               )}
-              {selected.verificationStatus === "VERIFIED" && (
+              {selected.verificationStatus === "VERIFIED" && !isRenewalReview && (
                 <div className={styles.reviewActions}>
                   <label>
                     Motivo da suspensão
