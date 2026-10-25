@@ -138,6 +138,8 @@ export function ProfessionalCareReviewPanel({
     deniedAuditEvents: 0,
     openReports: 0,
     pendingProfiles: 0,
+    expiringCredentials: 0,
+    expiredProfiles: 0,
   });
   const [reportStatus, setReportStatus] = useState<CommunicationReportStatus>("OPEN");
   const [reports, setReports] = useState<CommunicationReport[]>([]);
@@ -216,6 +218,8 @@ export function ProfessionalCareReviewPanel({
         blockedCommunications: number;
         openReports: number;
         pendingProfiles: number;
+        expiringCredentials: number;
+        expiredProfiles: number;
         auditEventsLast24h: number;
         deniedAuditEventsLast24h: number;
       } }).metrics;
@@ -228,6 +232,8 @@ export function ProfessionalCareReviewPanel({
         deniedAuditEvents: metrics.deniedAuditEventsLast24h,
         openReports: metrics.openReports,
         pendingProfiles: metrics.pendingProfiles,
+        expiringCredentials: metrics.expiringCredentials,
+        expiredProfiles: metrics.expiredProfiles,
       });
     }).catch((error: unknown) => {
       if (active && error instanceof Error && error.message === "SESSION_EXPIRED") onSessionExpired();
@@ -382,6 +388,8 @@ export function ProfessionalCareReviewPanel({
           <div><strong>{operations.expiring}</strong><span>expiram em até 7 dias</span></div>
           <div><strong>{operations.blocked}</strong><span>comunicações bloqueadas</span></div>
           <div><strong>{operations.pendingProfiles}</strong><span>perfis aguardando análise</span></div>
+          <div><strong>{operations.expiringCredentials}</strong><span>credenciais vencem em até 30 dias</span></div>
+          <div><strong>{operations.expiredProfiles}</strong><span>perfis expirados</span></div>
           <div><strong>{operations.openReports}</strong><span>denúncias abertas</span></div>
           <div><strong>{operations.auditEvents}</strong><span>acessos auditados em 24h</span></div>
           <div><strong>{operations.deniedAuditEvents}</strong><span>acessos negados em 24h</span></div>
