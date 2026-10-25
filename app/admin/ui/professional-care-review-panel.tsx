@@ -38,6 +38,15 @@ type ProfessionalProfile = {
   verifiedAt: string | null;
   user: { id: string; name: string; email: string; photoUrl: string | null };
   credentials: Credential[];
+  reviewLogs: Array<{
+    id: string;
+    action: string;
+    previousStatus: string | null;
+    resultingStatus: string | null;
+    reason: string | null;
+    createdAt: string;
+    actor: { id: string; name: string | null; email: string | null } | null;
+  }>;
 };
 
 const statusLabels: Record<VerificationStatus, string> = {
@@ -290,6 +299,18 @@ export function ProfessionalCareReviewPanel({
                           {openingCredential === credential.id ? "Abrindo…" : "Ver comprovante"}
                         </button>
                       )}
+                    </article>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3>Histórico de auditoria</h3>
+                <div className={styles.credentialList}>
+                  {(selected.reviewLogs ?? []).length === 0 ? <p>Nenhuma decisão registrada.</p> : selected.reviewLogs.map((log) => (
+                    <article key={log.id}>
+                      <div><strong>{log.action.replaceAll("_", " ")}</strong><span>{formatDate(log.createdAt)}</span></div>
+                      <p>{[log.previousStatus, log.resultingStatus].filter(Boolean).join(" → ") || "Acesso administrativo"}</p>
+                      <small>{log.reason || "Sem observação"} · {log.actor?.name || log.actor?.email || "Administrador removido"}</small>
                     </article>
                   ))}
                 </div>
