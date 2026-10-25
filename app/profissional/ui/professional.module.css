@@ -71,7 +71,10 @@
 
 .form input,
 .filters input,
-.filters select {
+.filters select,
+.inlineForm input,
+.inviteForm input,
+.inviteForm select {
   width: 100%;
   min-height: 48px;
   padding: 11px 13px;
@@ -84,7 +87,10 @@
 
 .form input:focus,
 .filters input:focus,
-.filters select:focus {
+.filters select:focus,
+.inlineForm input:focus,
+.inviteForm input:focus,
+.inviteForm select:focus {
   outline: 3px solid rgba(77, 105, 88, 0.16);
   border-color: #4d6958;
 }
@@ -427,6 +433,209 @@
   margin-bottom: 0;
 }
 
+.clinicSection {
+  margin-top: 18px;
+}
+
+.clinicPanel {
+  display: grid;
+  gap: 20px;
+}
+
+.sectionDescription,
+.muted {
+  margin: 0;
+  color: #68736b;
+  line-height: 1.55;
+}
+
+.clinicActions,
+.teamColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.inlineForm {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  border: 1px solid #ded5cc;
+  border-radius: 18px;
+  background: #faf8f4;
+}
+
+.inlineForm label,
+.inviteForm label {
+  display: grid;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.inlineLoading {
+  padding: 24px;
+  color: #68736b;
+  text-align: center;
+}
+
+.clinicWorkspace {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.3fr) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.clinicTabs {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.clinicTab,
+.clinicTabActive {
+  padding: 14px;
+  display: grid;
+  gap: 4px;
+  color: #34483b;
+  border: 1px solid #ded5cc;
+  border-radius: 14px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.clinicTabActive {
+  border-color: #587563;
+  background: #e6eee8;
+  box-shadow: inset 3px 0 #587563;
+}
+
+.clinicTab span {
+  color: #768078;
+  font-size: 12px;
+}
+
+.teamContent {
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+}
+
+.seatSummary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.seatSummary > div {
+  min-height: 86px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 14px;
+  background: #f3f5f1;
+}
+
+.seatSummary span {
+  color: #6b756e;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.seatSummary strong {
+  color: #304638;
+  font-size: 18px;
+}
+
+.inviteForm {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1.5fr) minmax(140px, 0.6fr) auto;
+  align-items: end;
+  gap: 10px;
+  border: 1px solid #cdd9d0;
+  border-radius: 16px;
+  background: #eef3ef;
+}
+
+.inviteLink {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px;
+  border: 1px solid #d5c99e;
+  border-radius: 16px;
+  background: #fff8df;
+}
+
+.inviteLink span {
+  grid-column: 1 / -1;
+  color: #6d5d27;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.inviteLink code {
+  padding: 12px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.8);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teamColumns h3 {
+  margin: 0 0 10px;
+}
+
+.memberList {
+  display: grid;
+  gap: 8px;
+}
+
+.memberCard {
+  padding: 13px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e4ddd5;
+  border-radius: 13px;
+}
+
+.memberCard > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.memberCard > div span {
+  overflow: hidden;
+  color: #6b756e;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.textButton {
+  padding: 6px;
+  color: #4d6958;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.textButton:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
 .centerState {
   align-content: center;
   text-align: center;
@@ -454,6 +663,9 @@
   .contentGrid { grid-template-columns: 1fr; }
   .filters { grid-template-columns: repeat(3, 1fr); }
   .appointmentCard { grid-template-columns: 1fr 1.2fr 1fr auto; }
+  .clinicWorkspace { grid-template-columns: 1fr; }
+  .clinicTabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .teamColumns { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 760px) {
@@ -471,6 +683,10 @@
   .filters label:first-child { grid-column: 1 / -1; }
   .appointmentCard { grid-template-columns: 1fr auto; }
   .appointmentCard > span:not(.statusBadge) { grid-column: 1 / -1; }
+  .clinicActions { grid-template-columns: 1fr; }
+  .seatSummary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .inviteForm { grid-template-columns: 1fr 1fr; }
+  .inviteForm .primaryButton { grid-column: 1 / -1; }
 }
 
 @media (max-width: 480px) {
@@ -491,4 +707,12 @@
   .patientCard .statusBadge { grid-column: 2; }
   .appointmentCard { grid-template-columns: 1fr; }
   .appointmentCard > span:not(.statusBadge) { grid-column: auto; }
+  .inlineForm,
+  .inviteForm,
+  .inviteLink { grid-template-columns: 1fr; }
+  .clinicTabs { grid-template-columns: 1fr; }
+  .inviteForm .primaryButton,
+  .inviteLink span { grid-column: auto; }
+  .memberCard { grid-template-columns: minmax(0, 1fr) auto; }
+  .memberCard .textButton { grid-column: 1 / -1; justify-self: start; }
 }

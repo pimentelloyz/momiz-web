@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 import styles from "./professional.module.css";
 
 type FirebaseClientConfig = { apiKey: string; projectId: string; authDomain: string };
-type Props = { firebaseConfig: FirebaseClientConfig | null };
+type Props = { firebaseConfig: FirebaseClientConfig | null; returnTo?: string };
 type LoginMethod = "password" | "google";
 
 const firebaseAppName = "momiz-professional";
@@ -36,7 +36,7 @@ function socialLoginError(error: unknown) {
   return "Não foi possível entrar com Google.";
 }
 
-export function ProfessionalLoginForm({ firebaseConfig }: Props) {
+export function ProfessionalLoginForm({ firebaseConfig, returnTo = "/profissional" }: Props) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState<LoginMethod | null>(null);
@@ -68,7 +68,7 @@ export function ProfessionalLoginForm({ firebaseConfig }: Props) {
     });
     const result = await response.json().catch(() => ({})) as { message?: string };
     if (!response.ok) throw new Error(result.message || "Não foi possível entrar.");
-    router.replace("/profissional");
+    router.replace(returnTo);
     router.refresh();
   }
 

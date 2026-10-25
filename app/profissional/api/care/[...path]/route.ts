@@ -14,18 +14,28 @@ function readErrorCode(body: string) {
   }
 }
 
-export async function GET(
+function sameOrigin(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  return !origin || origin === request.nextUrl.origin;
+}
+
+async function forward(
   request: NextRequest,
-  context: { params: Promise<{ path: string[] }> },
+  context: RouteContext<"/profissional/api/care/[...path]">,
 ) {
   const { path } = await context.params;
   const relativePath = path.join("/");
-  if (!isAllowedProfessionalCarePath(relativePath)) {
+  if (!isAllowedProfessionalCarePath(relativePath, request.method)) {
     return Response.json({ message: "Rota profissional inválida." }, { status: 404 });
   }
+  if (request.method !== "GET" && !sameOrigin(request)) {
+    return Response.json({ message: "Origem inválida." }, { status: 403 });
+  }
 
+  const body = request.method === "GET" ? undefined : await request.text();
   const upstream = await professionalApiFetch(
     `/api/care/${relativePath}${request.nextUrl.search}`,
+    { method: request.method, body: body || undefined },
   );
   const responseBody = await upstream.text();
   if (upstream.status === 403 && readErrorCode(responseBody) === "MFA_REQUIRED") {
@@ -42,3 +52,8 @@ export async function GET(
   if (disposition) headers.set("content-disposition", disposition);
   return new Response(responseBody || null, { status: upstream.status, headers });
 }
+
+export const GET = forward;
+export const POST = forward;
+export const PATCH = forward;
+export const DELETE = forward;

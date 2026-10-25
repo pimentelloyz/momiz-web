@@ -4,8 +4,20 @@ import { hasProfessionalSession } from "../../../lib/professional/professional-s
 import { ProfessionalLoginForm } from "../ui/professional-login-form";
 import styles from "../ui/professional.module.css";
 
-export default async function ProfessionalLoginPage() {
-  if (await hasProfessionalSession()) redirect("/profissional");
+function safeReturnTo(value?: string | string[]) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return candidate && /^\/profissional(?:\?clinicInvite=[A-Za-z0-9_%=-]{32,180})?$/.test(candidate)
+    ? candidate
+    : "/profissional";
+}
+
+export default async function ProfessionalLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ returnTo?: string | string[] }>;
+}) {
+  const returnTo = safeReturnTo((await searchParams).returnTo);
+  if (await hasProfessionalSession()) redirect(returnTo);
   const apiKey = process.env.FIREBASE_WEB_API_KEY;
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const firebaseConfig = apiKey && projectId
@@ -30,7 +42,7 @@ export default async function ProfessionalLoginPage() {
         <span className={styles.kicker}>Portal de cuidado</span>
         <h1>Acesso profissional</h1>
         <p>Consulte pacientes e compromissos autorizados por cada paciente.</p>
-        <ProfessionalLoginForm firebaseConfig={firebaseConfig} />
+        <ProfessionalLoginForm firebaseConfig={firebaseConfig} returnTo={returnTo} />
       </section>
     </div>
   );

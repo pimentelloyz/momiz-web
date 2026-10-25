@@ -12,6 +12,7 @@ import {
   ProfessionalAgendaFilter,
 } from "../../../lib/professional/agenda";
 import styles from "./professional.module.css";
+import { ClinicTeamPanel } from "./clinic-team-panel";
 
 type Profile = {
   displayName?: string | null;
@@ -280,6 +281,9 @@ export function ProfessionalDashboard() {
               </div>
             )}
           </section>
+        </div>
+        <div className={styles.clinicSection}>
+          <ClinicTeamPanel onSessionExpired={expireSession} />
         </div>
       </main>
     </div>
