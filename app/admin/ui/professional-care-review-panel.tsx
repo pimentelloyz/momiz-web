@@ -157,10 +157,10 @@ export function ProfessionalCareReviewPanel({
     return () => { active = false; };
   }, [onSessionExpired]);
 
-  async function review(decision: "verify" | "request_correction" | "reject") {
+  async function review(decision: "verify" | "request_correction" | "reject" | "suspend") {
     if (!selected) return;
     if (decision !== "verify" && !reason.trim()) {
-      onMessage("Informe o motivo antes de solicitar correção ou rejeitar.");
+      onMessage("Informe o motivo antes de solicitar correção, rejeitar ou suspender.");
       return;
     }
     setReviewing(true);
@@ -174,7 +174,9 @@ export function ProfessionalCareReviewPanel({
           ? "Perfil verificado e vínculos pendentes ativados."
           : decision === "request_correction"
             ? "Correção solicitada ao profissional."
-            : "Cadastro profissional rejeitado.",
+            : decision === "suspend"
+              ? "Perfil suspenso e vínculos ativos pausados."
+              : "Cadastro profissional rejeitado.",
       );
       setReason("");
       await load();
@@ -302,6 +304,17 @@ export function ProfessionalCareReviewPanel({
                     <button disabled={reviewing} className={styles.dangerButton} onClick={() => void review("reject")}>Rejeitar</button>
                     <button disabled={reviewing} className={styles.secondaryButton} onClick={() => void review("request_correction")}>Solicitar correção</button>
                     <button disabled={reviewing} className={styles.primaryButton} onClick={() => void review("verify")}>{reviewing ? "Salvando…" : "Verificar perfil"}</button>
+                  </div>
+                </div>
+              )}
+              {selected.verificationStatus === "VERIFIED" && (
+                <div className={styles.reviewActions}>
+                  <label>
+                    Motivo da suspensão
+                    <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} placeholder="Descreva o motivo operacional ou de segurança" />
+                  </label>
+                  <div className={styles.actions}>
+                    <button disabled={reviewing} className={styles.dangerButton} onClick={() => void review("suspend")}>Suspender perfil e pausar vínculos</button>
                   </div>
                 </div>
               )}
