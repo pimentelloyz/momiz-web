@@ -620,6 +620,66 @@
   white-space: nowrap;
 }
 
+.auditPanel {
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+  border: 1px solid #d6ddd7;
+  border-radius: 16px;
+  background: #fafbf9;
+}
+
+.auditPanel h3 {
+  margin: 0 0 4px;
+}
+
+.auditList {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  list-style: none;
+}
+
+.auditList li {
+  position: relative;
+  padding: 0 0 16px 24px;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.auditList li:not(:last-child)::after {
+  position: absolute;
+  top: 11px;
+  bottom: 0;
+  left: 4px;
+  width: 1px;
+  background: #c8d4cb;
+  content: "";
+}
+
+.auditList li:last-child {
+  padding-bottom: 0;
+}
+
+.auditMarker {
+  width: 9px;
+  height: 9px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #587563;
+}
+
+.auditList li > div {
+  display: grid;
+  gap: 3px;
+}
+
+.auditList li span {
+  color: #6b756e;
+  font-size: 12px;
+}
+
 .textButton {
   padding: 6px;
   color: #4d6958;

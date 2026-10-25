@@ -31,11 +31,21 @@ type Invitation = {
   expiresAt: string;
 };
 
+type AuditLog = {
+  id: string;
+  action: string;
+  targetMembershipId?: string | null;
+  targetInvitationId?: string | null;
+  createdAt: string;
+  actor?: { id: string; name?: string | null } | null;
+};
+
 type TeamPayload = {
   clinic: Clinic;
   membership: { id: string; role: "OWNER" | "ADMIN" | "MEMBER"; status: string };
   members: Member[];
   invitations: Invitation[];
+  auditLogs?: AuditLog[];
 };
 
 const professionLabels: Record<string, string> = {
@@ -43,6 +53,16 @@ const professionLabels: Record<string, string> = {
   DOULA: "Doula",
   OBSTETRIC_NURSE: "Enfermeira obstetra",
   PELVIC_PHYSIOTHERAPIST: "Fisioterapeuta pélvica",
+};
+
+const auditActionLabels: Record<string, string> = {
+  CLINIC_CREATED: "Criou a clínica",
+  INVITATION_CREATED: "Criou um convite",
+  INVITATION_ACCEPTED: "Aceitou um convite",
+  INVITATION_CANCELED: "Cancelou um convite",
+  INVITATION_EXPIRED: "Convite expirou automaticamente",
+  MEMBER_SUSPENDED: "Suspendeu um membro",
+  MEMBER_REACTIVATED: "Reativou um membro",
 };
 
 async function clinicRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -284,6 +304,30 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
                   </article>
                 ))}</div>}</div>
               </div>
+
+              {canManage && (
+                <div className={styles.auditPanel}>
+                  <div>
+                    <h3>Histórico de segurança</h3>
+                    <p className={styles.muted}>Últimas alterações administrativas da equipe.</p>
+                  </div>
+                  {(team.auditLogs || []).length === 0 ? (
+                    <p className={styles.muted}>Nenhuma alteração registrada.</p>
+                  ) : (
+                    <ol className={styles.auditList}>
+                      {(team.auditLogs || []).map((log) => (
+                        <li key={log.id}>
+                          <span className={styles.auditMarker} aria-hidden="true" />
+                          <div>
+                            <strong>{auditActionLabels[log.action] || "Alteração administrativa"}</strong>
+                            <span>{log.actor?.name || "Sistema"} · {formatDate(log.createdAt)}</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
