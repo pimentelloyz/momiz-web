@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AccessPackagePolicyPanel } from "./access-package-policy-panel";
 import { ProfessionalCareReviewPanel } from "./professional-care-review-panel";
+import { CareAnalyticsPanel } from "./care-analytics-panel";
 import { adminApi as api } from "./admin-api-client";
 import styles from "./admin.module.css";
 
@@ -99,7 +100,7 @@ export function AdminDashboard() {
   const [demoProfile, setDemoProfile] = useState<Demo["packageCode"]>("DEMO");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [section, setSection] = useState<"users" | "plans" | "care">("users");
+  const [section, setSection] = useState<"users" | "plans" | "care" | "reports">("users");
   const [defaultDemoWindow] = useState(() => ({
     startsAt: new Date(),
     expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
@@ -316,6 +317,14 @@ export function AdminDashboard() {
         >
           Profissionais de saúde
         </button>
+        <button
+          className={
+            section === "reports" ? styles.adminTabActive : styles.adminTab
+          }
+          onClick={() => setSection("reports")}
+        >
+          Relatórios anônimos
+        </button>
       </nav>
       {section === "plans" ? (
         <AccessPackagePolicyPanel
@@ -327,6 +336,14 @@ export function AdminDashboard() {
         />
       ) : section === "care" ? (
         <ProfessionalCareReviewPanel
+          onMessage={setMessage}
+          onSessionExpired={() => {
+            router.replace("/admin/login");
+            router.refresh();
+          }}
+        />
+      ) : section === "reports" ? (
+        <CareAnalyticsPanel
           onMessage={setMessage}
           onSessionExpired={() => {
             router.replace("/admin/login");

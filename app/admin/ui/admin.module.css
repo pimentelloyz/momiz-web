@@ -632,6 +632,124 @@
 .careReviewPanel {
   padding: 28px clamp(24px, 5vw, 72px) 80px;
 }
+.analyticsPanel {
+  padding: 28px clamp(24px, 5vw, 72px) 80px;
+}
+.analyticsPanel > .sectionCard,
+.analyticsGroups {
+  max-width: 1500px;
+  margin-right: auto;
+  margin-left: auto;
+}
+.analyticsPanel h2 {
+  margin: 8px 0;
+  font-size: clamp(25px, 3vw, 34px);
+}
+.analyticsFilters {
+  display: grid;
+  grid-template-columns: 150px 150px auto;
+  align-items: end;
+  gap: 10px;
+}
+.analyticsFilters label {
+  display: grid;
+  gap: 7px;
+  color: #354b3d;
+  font-size: 12px;
+  font-weight: 800;
+}
+.analyticsFilters input {
+  min-height: 44px;
+  padding: 9px 11px;
+  color: #223027;
+  border: 1px solid #cfc5bc;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+}
+.privacyNotice {
+  margin-top: 20px;
+  padding: 15px 17px;
+  display: grid;
+  gap: 4px;
+  color: #354b3d;
+  border: 1px solid #cbd8cd;
+  border-radius: 13px;
+  background: #e7eee8;
+}
+.privacyNotice span {
+  color: #5f6d63;
+  font-size: 13px;
+}
+.analyticsEmpty {
+  max-width: 1500px;
+  margin: 22px auto 0;
+  padding: 56px 24px;
+  text-align: center;
+  border: 1px dashed #cfc5bc;
+  border-radius: 18px;
+  background: #faf7f2;
+}
+.analyticsEmpty p {
+  color: #626d65;
+}
+.analyticsTotals {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+.analyticsTotals article {
+  min-height: 122px;
+  padding: 17px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid #ded5cc;
+  border-radius: 14px;
+  background: #fff;
+}
+.analyticsTotals strong {
+  color: #354b3d;
+  font-size: 28px;
+}
+.analyticsTotals span {
+  color: #626d65;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.analyticsTotals .suppressedMetric {
+  border-style: dashed;
+  background: #f5f1eb;
+}
+.analyticsTotals .suppressedMetric strong {
+  font-size: 14px;
+}
+.analyticsGroups {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.analyticsGroups h3 {
+  margin-top: 0;
+}
+.analyticsGroups ul {
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+  list-style: none;
+}
+.analyticsGroups li {
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  border-radius: 9px;
+  background: #f5f1eb;
+  font-size: 13px;
+}
 .careReviewPanel > .sectionCard {
   max-width: 1500px;
   margin-right: auto;
@@ -852,6 +970,14 @@
   }
   .careReviewPanel {
     padding: 20px 16px 60px;
+  }
+  .analyticsPanel {
+    padding: 20px 16px 60px;
+  }
+  .analyticsFilters,
+  .analyticsTotals,
+  .analyticsGroups {
+    grid-template-columns: 1fr;
   }
   .careReviewGrid,
   .profileFacts {

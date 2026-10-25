@@ -22,6 +22,7 @@ const allowed = [
   new RegExp(`^care/profiles/${uuid}/review$`, "i"),
   new RegExp(`^care/profiles/${uuid}/credentials/${uuid}/download-url$`, "i"),
   new RegExp("^care/metrics$", "i"),
+  new RegExp("^care/analytics$", "i"),
   new RegExp("^care/relationships$", "i"),
   new RegExp("^care/audit-logs$", "i"),
   new RegExp("^care/communication-reports$", "i"),
