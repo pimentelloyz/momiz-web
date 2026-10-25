@@ -2,6 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AccessPackagePolicyPanel } from "./access-package-policy-panel";
+import { adminApi as api } from "./admin-api-client";
 import styles from "./admin.module.css";
 
 type UserSummary = {
@@ -44,14 +46,6 @@ function displayDate(value: string | null) {
   return value ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value)) : "Sem término";
 }
 
-async function api(path: string, init?: RequestInit) {
-  const response = await fetch(`/admin/api/access/${path}`, init);
-  const data = await response.json().catch(() => ({}));
-  if (response.status === 401) throw new Error("SESSION_EXPIRED");
-  if (!response.ok) throw new Error(data.message || data.error?.message || "Não foi possível concluir a operação.");
-  return data;
-}
-
 export function AdminDashboard() {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -60,6 +54,7 @@ export function AdminDashboard() {
   const [editing, setEditing] = useState<Demo | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [section, setSection] = useState<"users" | "plans">("users");
   const [defaultDemoWindow] = useState(() => ({
     startsAt: new Date(),
     expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
@@ -162,11 +157,23 @@ export function AdminDashboard() {
   return (
     <div className={styles.adminPage}>
       <header className={styles.adminHeader}>
-        <div><span className={styles.kicker}>Momiz operacional</span><h1>Acessos e demonstrações</h1></div>
+        <div><span className={styles.kicker}>Momiz operacional</span><h1>Painel administrativo</h1></div>
         <button className={styles.secondaryButton} onClick={logout}>Sair</button>
       </header>
       {message && <div className={styles.feedback} role="status">{message}</div>}
-      <div className={styles.adminGrid}>
+      <nav className={styles.adminTabs} aria-label="Seções administrativas">
+        <button className={section === "users" ? styles.adminTabActive : styles.adminTab} onClick={() => setSection("users")}>Acessos e demos</button>
+        <button className={section === "plans" ? styles.adminTabActive : styles.adminTab} onClick={() => setSection("plans")}>Planos e recursos</button>
+      </nav>
+      {section === "plans" ? (
+        <AccessPackagePolicyPanel
+          onMessage={setMessage}
+          onSessionExpired={() => {
+            router.replace("/admin/login");
+            router.refresh();
+          }}
+        />
+      ) : <div className={styles.adminGrid}>
         <aside className={styles.userPanel}>
           <form className={styles.search} onSubmit={submitSearch}>
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nome, e-mail ou ID" aria-label="Buscar usuário" />
@@ -207,7 +214,7 @@ export function AdminDashboard() {
                     <label>Observações<textarea name="notes" defaultValue={formDemo?.notes || ""} rows={3} /></label>
                     <fieldset><legend>Recursos adicionais</legend>{booleanOverrides.map(([key, label]) => <label className={styles.checkbox} key={key}><input name={key} type="checkbox" defaultChecked={formDemo?.overrides.some((item) => item.capability === key && item.enabled === true)} />{label}</label>)}</fieldset>
                     <div className={styles.threeColumns}>
-                      <label>Convidados<input name="guest.limit_per_event" type="number" min="0" placeholder="20" defaultValue={formDemo?.overrides.find((item) => item.capability === "guest.limit_per_event")?.limitValue ?? ""} /></label>
+                      <label>Pessoas convidadas<input name="guest.limit_per_event" type="number" min="0" placeholder="20" defaultValue={formDemo?.overrides.find((item) => item.capability === "guest.limit_per_event")?.limitValue ?? ""} /></label>
                       <label>Presentes<input name="gift.limit_per_event" type="number" min="0" placeholder="20" defaultValue={formDemo?.overrides.find((item) => item.capability === "gift.limit_per_event")?.limitValue ?? ""} /></label>
                       <label>Lotes sugeridos<input name="gift.suggestion_batch_limit" type="number" min="0" placeholder="1" defaultValue={formDemo?.overrides.find((item) => item.capability === "gift.suggestion_batch_limit")?.limitValue ?? ""} /></label>
                     </div>
@@ -220,7 +227,7 @@ export function AdminDashboard() {
             </>
           )}
         </main>
-      </div>
+      </div>}
     </div>
   );
 }

@@ -8,6 +8,16 @@ const allowed = [
   new RegExp(`^users/${uuid}/demos$`, "i"),
   new RegExp(`^users/${uuid}/demos/${uuid}$`, "i"),
   new RegExp(`^users/${uuid}/demos/${uuid}/revoke$`, "i"),
+  new RegExp("^access/package-policies/current$", "i"),
+  new RegExp("^access/package-policies/history$", "i"),
+  new RegExp("^access/package-policies/drafts$", "i"),
+  new RegExp(`^access/package-policies/drafts/${uuid}$`, "i"),
+  new RegExp(`^access/package-policies/drafts/${uuid}/validate$`, "i"),
+  new RegExp(`^access/package-policies/drafts/${uuid}/publish$`, "i"),
+  new RegExp(`^access/package-policies/${uuid}$`, "i"),
+  new RegExp(`^access/package-policies/${uuid}/diff$`, "i"),
+  new RegExp(`^access/package-policies/${uuid}/impact-preview$`, "i"),
+  new RegExp(`^access/package-policies/${uuid}/clone$`, "i"),
 ];
 
 function sameOrigin(request: NextRequest) {
@@ -41,3 +51,4 @@ async function forward(request: NextRequest, context: RouteContext<"/admin/api/a
 export const GET = forward;
 export const POST = forward;
 export const PATCH = forward;
+export const PUT = forward;
