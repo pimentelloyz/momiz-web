@@ -898,6 +898,107 @@
   font-size: 13px;
   font-weight: 800;
 }
+.readinessReady,
+.readinessBlocked {
+  padding: 9px 13px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.readinessReady {
+  color: #28563a;
+  background: #dcecdf;
+}
+.readinessBlocked {
+  color: #7b3f27;
+  background: #f3dfd4;
+}
+.readinessNotice {
+  margin: 18px 0;
+  padding: 15px 17px;
+  display: grid;
+  gap: 4px;
+  color: #354b3d;
+  border: 1px solid #d9d0c8;
+  border-radius: 13px;
+  background: #f5f1eb;
+}
+.readinessNotice span {
+  color: #626d65;
+  font-size: 13px;
+}
+.pilotGateGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.pilotGateCard {
+  padding: 18px;
+  display: grid;
+  gap: 13px;
+  border: 1px solid #ded5cc;
+  border-radius: 15px;
+  background: #fff;
+}
+.pilotGateHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.pilotGateHeader h3,
+.pilotGateHeader p {
+  margin: 0;
+}
+.pilotGateHeader p {
+  margin-top: 5px;
+  color: #626d65;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.pilotGateHeader > span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: #685f58;
+  background: #eee9e3;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.pilotGateHeader > span[data-status="APPROVED"] {
+  color: #28563a;
+  background: #dcecdf;
+}
+.pilotGateHeader > span[data-status="BLOCKED"] {
+  color: #8a2f2a;
+  background: #f4d9d6;
+}
+.pilotGateCard label {
+  display: grid;
+  gap: 6px;
+  color: #354b3d;
+  font-size: 12px;
+  font-weight: 800;
+}
+.pilotGateCard select,
+.pilotGateCard input,
+.pilotGateCard textarea {
+  width: 100%;
+  padding: 10px 12px;
+  color: #223027;
+  border: 1px solid #cfc5bc;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+}
+.pilotGateCard small {
+  color: #626d65;
+  line-height: 1.4;
+}
+.pilotGateCard button {
+  justify-self: start;
+}
 
 @media (max-width: 900px) {
   .adminGrid {
@@ -980,8 +1081,12 @@
     grid-template-columns: 1fr;
   }
   .careReviewGrid,
-  .profileFacts {
+  .profileFacts,
+  .pilotGateGrid {
     grid-template-columns: 1fr;
+  }
+  .pilotGateHeader {
+    flex-direction: column;
   }
   .reviewIdentity {
     align-items: flex-start;
