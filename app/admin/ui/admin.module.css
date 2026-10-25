@@ -6,9 +6,9 @@
 .kicker { color: #4d6958; font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
 .form, .demoForm { display: grid; gap: 18px; margin-top: 30px; }
 .form label, .demoForm label { display: grid; gap: 8px; font-size: 13px; font-weight: 800; }
-.form input, .demoForm input, .demoForm textarea, .search input { width: 100%; min-height: 48px; padding: 12px 14px; color: #223027; border: 1px solid #cfc5bc; border-radius: 12px; background: #fff; font: inherit; }
+.form input, .demoForm input, .demoForm textarea, .demoForm select, .search input { width: 100%; min-height: 48px; padding: 12px 14px; color: #223027; border: 1px solid #cfc5bc; border-radius: 12px; background: #fff; font: inherit; }
 .demoForm textarea { resize: vertical; }
-.form input:focus, .demoForm input:focus, .demoForm textarea:focus, .search input:focus { outline: 3px solid rgba(77, 105, 88, .15); border-color: #4d6958; }
+.form input:focus, .demoForm input:focus, .demoForm textarea:focus, .demoForm select:focus, .search input:focus { outline: 3px solid rgba(77, 105, 88, .15); border-color: #4d6958; }
 .primaryButton, .secondaryButton, .dangerButton { min-height: 44px; padding: 11px 18px; border: 1px solid transparent; border-radius: 12px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
 .primaryButton { color: #fff; background: #4d6958; }
 .secondaryButton { color: #4d6958; border-color: #aeb9b0; background: #fff; }
@@ -104,6 +104,34 @@
 .historyActions { display: flex !important; grid-auto-flow: column; gap: 8px !important; }
 .historyDiff { margin: 8px 0 0; padding-left: 18px; color: #425248; }
 .historyDiff li { display: list-item; padding: 4px 0; border: 0; font-size: 12px; }
+.careReviewPanel { padding: 28px clamp(24px, 5vw, 72px) 80px; }
+.careReviewPanel > .sectionCard { max-width: 1500px; margin-right: auto; margin-left: auto; }
+.careReviewPanel h2 { margin: 8px 0; font-size: clamp(25px, 3vw, 34px); }
+.statusFilter { min-width: 220px; display: grid; gap: 7px; color: #354b3d; font-size: 12px; font-weight: 800; }
+.statusFilter select, .reviewActions textarea { width: 100%; padding: 11px 13px; color: #223027; border: 1px solid #cfc5bc; border-radius: 10px; background: #fff; font: inherit; }
+.careReviewGrid { max-width: 1500px; margin: 0 auto; display: grid; grid-template-columns: minmax(280px, 360px) 1fr; gap: 22px; align-items: start; }
+.reviewList { margin-top: 18px; display: grid; gap: 8px; }
+.reviewItem, .reviewSelected { padding: 14px; display: grid; gap: 4px; color: #223027; text-align: left; border: 1px solid #ded5cc; border-radius: 13px; background: #fff; cursor: pointer; }
+.reviewSelected { border-color: #4d6958; background: #e4ebe4; }
+.reviewItem span, .reviewSelected span, .reviewItem small, .reviewSelected small { color: #626d65; }
+.reviewDetail { display: grid; gap: 26px; }
+.reviewIdentity { display: flex; justify-content: space-between; gap: 20px; }
+.reviewIdentity h2 { margin: 7px 0 0; }
+.reviewIdentity p { margin: 5px 0 0; }
+.profileFacts { margin: 0; padding: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; border-radius: 13px; background: #f3eee8; }
+.profileFacts div { display: grid; gap: 4px; }
+.profileFacts dt { color: #626d65; font-size: 11px; }
+.profileFacts dd { margin: 0; font-size: 13px; font-weight: 800; }
+.reviewBio { padding: 16px; border-left: 3px solid #4d6958; background: #eef3ee; }
+.reviewBio p { margin: 7px 0 0; }
+.credentialList { margin-top: 14px; display: grid; gap: 10px; }
+.credentialList article { padding: 16px; border: 1px solid #ded5cc; border-radius: 13px; }
+.credentialList article > div { display: flex; justify-content: space-between; gap: 12px; }
+.credentialList article span { color: #4d6958; font-size: 11px; font-weight: 900; }
+.credentialList article p { margin: 8px 0 3px; }
+.credentialList article small { color: #626d65; }
+.reviewActions { padding-top: 22px; display: grid; gap: 14px; border-top: 1px solid #ded5cc; }
+.reviewActions label { display: grid; gap: 7px; font-size: 13px; font-weight: 800; }
 
 @media (max-width: 900px) {
   .adminGrid { grid-template-columns: 1fr; }
@@ -125,4 +153,7 @@
   .adminTabs { margin-right: 16px; margin-left: 16px; display: flex; }
   .adminTab, .adminTabActive { flex: 1; }
   .sectionTitle, .policyHistory li, .changeList li { align-items: flex-start; flex-direction: column; }
+  .careReviewPanel { padding: 20px 16px 60px; }
+  .careReviewGrid, .profileFacts { grid-template-columns: 1fr; }
+  .reviewIdentity { align-items: flex-start; flex-direction: column; }
 }

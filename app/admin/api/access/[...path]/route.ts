@@ -18,6 +18,8 @@ const allowed = [
   new RegExp(`^access/package-policies/${uuid}/diff$`, "i"),
   new RegExp(`^access/package-policies/${uuid}/impact-preview$`, "i"),
   new RegExp(`^access/package-policies/${uuid}/clone$`, "i"),
+  new RegExp("^care/profiles$", "i"),
+  new RegExp(`^care/profiles/${uuid}/review$`, "i"),
 ];
 
 function sameOrigin(request: NextRequest) {

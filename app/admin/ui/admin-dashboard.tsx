@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AccessPackagePolicyPanel } from "./access-package-policy-panel";
+import { ProfessionalCareReviewPanel } from "./professional-care-review-panel";
 import { adminApi as api } from "./admin-api-client";
 import styles from "./admin.module.css";
 
@@ -12,7 +13,8 @@ type UserSummary = {
 };
 type Override = { capability: string; enabled: boolean | null; limitValue: number | null };
 type Demo = {
-  id: string; status: string; startsAt: string; expiresAt: string; reason: string;
+  id: string; kind: string; packageCode: "DEMO" | "STANDARD" | "PRO";
+  status: string; startsAt: string; expiresAt: string; reason: string;
   notes: string | null; overrides: Override[];
 };
 type AccessDetail = {
@@ -36,6 +38,12 @@ const booleanOverrides = [
   ["event.advanced_analytics", "Relatório avançado"],
 ] as const;
 
+const demoProfileLabels: Record<Demo["packageCode"], string> = {
+  DEMO: "Demo personalizada",
+  STANDARD: "Standard",
+  PRO: "Pro",
+};
+
 function localDateTime(value: Date | string) {
   const date = new Date(value);
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
@@ -52,9 +60,10 @@ export function AdminDashboard() {
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [detail, setDetail] = useState<AccessDetail | null>(null);
   const [editing, setEditing] = useState<Demo | null>(null);
+  const [demoProfile, setDemoProfile] = useState<Demo["packageCode"]>("DEMO");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [section, setSection] = useState<"users" | "plans">("users");
+  const [section, setSection] = useState<"users" | "plans" | "care">("users");
   const [defaultDemoWindow] = useState(() => ({
     startsAt: new Date(),
     expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
@@ -93,6 +102,8 @@ export function AdminDashboard() {
 
   async function openUser(userId: string) {
     setMessage("");
+    setEditing(null);
+    setDemoProfile("DEMO");
     try { setDetail(await api(`users/${userId}/access`) as AccessDetail); }
     catch (error) { handleError(error); }
   }
@@ -107,14 +118,17 @@ export function AdminDashboard() {
     if (!detail) return;
     const form = new FormData(event.currentTarget);
     const overrides: Array<{ capability: string; enabled?: boolean; limitValue?: number; reason: string }> = [];
-    for (const [capability] of booleanOverrides) {
-      if (form.get(capability) === "on") overrides.push({ capability, enabled: true, reason: String(form.get("reason")) });
-    }
-    for (const capability of ["guest.limit_per_event", "gift.limit_per_event", "gift.suggestion_batch_limit"]) {
-      const raw = String(form.get(capability) || "");
-      if (raw) overrides.push({ capability, limitValue: Number(raw), reason: String(form.get("reason")) });
+    if (demoProfile === "DEMO") {
+      for (const [capability] of booleanOverrides) {
+        if (form.get(capability) === "on") overrides.push({ capability, enabled: true, reason: String(form.get("reason")) });
+      }
+      for (const capability of ["guest.limit_per_event", "gift.limit_per_event", "gift.suggestion_batch_limit"]) {
+        const raw = String(form.get(capability) || "");
+        if (raw) overrides.push({ capability, limitValue: Number(raw), reason: String(form.get("reason")) });
+      }
     }
     const payload = {
+      packageCode: demoProfile,
       startsAt: new Date(String(form.get("startsAt"))).toISOString(),
       expiresAt: new Date(String(form.get("expiresAt"))).toISOString(),
       reason: String(form.get("reason")),
@@ -151,7 +165,9 @@ export function AdminDashboard() {
     router.replace("/admin/login"); router.refresh();
   }
 
-  const activeDemo = detail?.user.accessEntitlements.find((item) => ["ACTIVE", "SCHEDULED"].includes(item.status));
+  const activeDemo = detail?.user.accessEntitlements.find(
+    (item) => item.kind === "DEMO" && ["ACTIVE", "SCHEDULED"].includes(item.status),
+  );
   const formDemo = editing;
 
   return (
@@ -164,9 +180,18 @@ export function AdminDashboard() {
       <nav className={styles.adminTabs} aria-label="Seções administrativas">
         <button className={section === "users" ? styles.adminTabActive : styles.adminTab} onClick={() => setSection("users")}>Acessos e demos</button>
         <button className={section === "plans" ? styles.adminTabActive : styles.adminTab} onClick={() => setSection("plans")}>Planos e recursos</button>
+        <button className={section === "care" ? styles.adminTabActive : styles.adminTab} onClick={() => setSection("care")}>Profissionais de saúde</button>
       </nav>
       {section === "plans" ? (
         <AccessPackagePolicyPanel
+          onMessage={setMessage}
+          onSessionExpired={() => {
+            router.replace("/admin/login");
+            router.refresh();
+          }}
+        />
+      ) : section === "care" ? (
+        <ProfessionalCareReviewPanel
           onMessage={setMessage}
           onSessionExpired={() => {
             router.replace("/admin/login");
@@ -200,24 +225,29 @@ export function AdminDashboard() {
                 <div className={styles.sectionTitle}><div><h3>Demo comercial</h3><p>O acesso expira automaticamente no término informado.</p></div></div>
                 {activeDemo && !editing && (
                   <article className={styles.demoCard}>
-                    <div><strong>{activeDemo.status}</strong><p>{displayDate(activeDemo.startsAt)} → {displayDate(activeDemo.expiresAt)}</p><small>{activeDemo.reason}</small></div>
-                    <div><button className={styles.secondaryButton} onClick={() => setEditing(activeDemo)}>Editar</button><button className={styles.dangerButton} onClick={() => revoke(activeDemo)}>Revogar</button></div>
+                    <div><strong>{demoProfileLabels[activeDemo.packageCode]} · {activeDemo.status}</strong><p>{displayDate(activeDemo.startsAt)} → {displayDate(activeDemo.expiresAt)}</p><small>{activeDemo.reason}</small></div>
+                    <div><button className={styles.secondaryButton} onClick={() => { setEditing(activeDemo); setDemoProfile(activeDemo.packageCode); }}>Editar</button><button className={styles.dangerButton} onClick={() => revoke(activeDemo)}>Revogar</button></div>
                   </article>
                 )}
                 {(!activeDemo || editing) && (
                   <form className={styles.demoForm} onSubmit={saveDemo}>
+                    <label>Perfil temporário<select name="packageCode" value={demoProfile} onChange={(event) => setDemoProfile(event.target.value as Demo["packageCode"])} required><option value="DEMO">Demo personalizada</option><option value="STANDARD">Standard</option><option value="PRO">Pro</option></select></label>
                     <div className={styles.twoColumns}>
                       <label>Início<input name="startsAt" type="datetime-local" defaultValue={localDateTime(formDemo?.startsAt || defaultDemoWindow.startsAt)} required /></label>
                       <label>Término<input name="expiresAt" type="datetime-local" defaultValue={localDateTime(formDemo?.expiresAt || defaultDemoWindow.expiresAt)} required /></label>
                     </div>
                     <label>Motivo<input name="reason" defaultValue={formDemo?.reason || "Demonstração comercial"} minLength={3} required /></label>
                     <label>Observações<textarea name="notes" defaultValue={formDemo?.notes || ""} rows={3} /></label>
-                    <fieldset><legend>Recursos adicionais</legend>{booleanOverrides.map(([key, label]) => <label className={styles.checkbox} key={key}><input name={key} type="checkbox" defaultChecked={formDemo?.overrides.some((item) => item.capability === key && item.enabled === true)} />{label}</label>)}</fieldset>
-                    <div className={styles.threeColumns}>
-                      <label>Pessoas convidadas<input name="guest.limit_per_event" type="number" min="0" placeholder="20" defaultValue={formDemo?.overrides.find((item) => item.capability === "guest.limit_per_event")?.limitValue ?? ""} /></label>
-                      <label>Presentes<input name="gift.limit_per_event" type="number" min="0" placeholder="20" defaultValue={formDemo?.overrides.find((item) => item.capability === "gift.limit_per_event")?.limitValue ?? ""} /></label>
-                      <label>Lotes sugeridos<input name="gift.suggestion_batch_limit" type="number" min="0" placeholder="1" defaultValue={formDemo?.overrides.find((item) => item.capability === "gift.suggestion_batch_limit")?.limitValue ?? ""} /></label>
-                    </div>
+                    {demoProfile === "DEMO" && (
+                      <>
+                        <fieldset><legend>Exceções adicionais ao perfil</legend>{booleanOverrides.map(([key, label]) => <label className={styles.checkbox} key={key}><input name={key} type="checkbox" defaultChecked={formDemo?.overrides.some((item) => item.capability === key && item.enabled === true)} />{label}</label>)}</fieldset>
+                        <div className={styles.threeColumns}>
+                          <label>Pessoas convidadas<input name="guest.limit_per_event" type="number" min="0" placeholder="20" defaultValue={formDemo?.overrides.find((item) => item.capability === "guest.limit_per_event")?.limitValue ?? ""} /></label>
+                          <label>Presentes<input name="gift.limit_per_event" type="number" min="0" placeholder="20" defaultValue={formDemo?.overrides.find((item) => item.capability === "gift.limit_per_event")?.limitValue ?? ""} /></label>
+                          <label>Lotes sugeridos<input name="gift.suggestion_batch_limit" type="number" min="0" placeholder="1" defaultValue={formDemo?.overrides.find((item) => item.capability === "gift.suggestion_batch_limit")?.limitValue ?? ""} /></label>
+                        </div>
+                      </>
+                    )}
                     <div className={styles.actions}>{editing && <button type="button" className={styles.secondaryButton} onClick={() => setEditing(null)}>Cancelar</button>}<button className={styles.primaryButton}>{editing ? "Salvar demo" : "Liberar demo"}</button></div>
                   </form>
                 )}
