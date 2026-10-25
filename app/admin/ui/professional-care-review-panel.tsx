@@ -77,6 +77,7 @@ export function ProfessionalCareReviewPanel({
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState(false);
+  const [operations, setOperations] = useState({ active: 0, paused: 0, auditEvents: 0 });
 
   const selected = useMemo(
     () => profiles.find((profile) => profile.id === selectedId) ?? profiles[0] ?? null,
@@ -134,6 +135,26 @@ export function ProfessionalCareReviewPanel({
     return () => { active = false; };
   }, [onMessage, onSessionExpired, status]);
 
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      adminApi("care/relationships"),
+      adminApi("care/audit-logs"),
+    ]).then(([relationshipData, auditData]) => {
+      if (!active) return;
+      const relationships = (relationshipData as { relationships: Array<{ status: string }> }).relationships;
+      const auditLogs = (auditData as { auditLogs: unknown[] }).auditLogs;
+      setOperations({
+        active: relationships.filter((item) => item.status === "ACTIVE" || item.status === "READ_ONLY").length,
+        paused: relationships.filter((item) => item.status === "PAUSED").length,
+        auditEvents: auditLogs.length,
+      });
+    }).catch((error: unknown) => {
+      if (active && error instanceof Error && error.message === "SESSION_EXPIRED") onSessionExpired();
+    });
+    return () => { active = false; };
+  }, [onSessionExpired]);
+
   async function review(decision: "verify" | "request_correction" | "reject") {
     if (!selected) return;
     if (decision !== "verify" && !reason.trim()) {
@@ -183,6 +204,11 @@ export function ProfessionalCareReviewPanel({
               ))}
             </select>
           </label>
+        </div>
+        <div className={styles.impactGrid}>
+          <div><strong>{operations.active}</strong><span>vínculos ativos</span></div>
+          <div><strong>{operations.paused}</strong><span>vínculos pausados</span></div>
+          <div><strong>{operations.auditEvents}</strong><span>eventos recentes auditados</span></div>
         </div>
       </section>
 
