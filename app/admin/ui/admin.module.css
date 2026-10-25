@@ -42,6 +42,23 @@
   gap: 18px;
   margin-top: 30px;
 }
+.securityNotice {
+  display: grid;
+  gap: 5px;
+  padding: 15px;
+  color: #223027;
+  border: 1px solid #4d6958;
+  border-radius: 14px;
+  background: #e4ebe4;
+}
+.securityNotice strong {
+  font-size: 15px;
+}
+.securityNotice span {
+  color: #526158;
+  font-size: 14px;
+  line-height: 1.45;
+}
 .form label,
 .demoForm label {
   display: grid;

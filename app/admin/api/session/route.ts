@@ -58,7 +58,27 @@ export async function POST(request: NextRequest) {
   await saveAdminSession({ accessToken: exchange.accessToken, refreshToken: exchange.refreshToken });
   const authorization = await adminApiFetch("/api/admin/users?pageSize=1");
   if (!authorization.ok) {
+    const authorizationPayload = (await authorization
+      .clone()
+      .json()
+      .catch(() => null)) as {
+      code?: string;
+      error?: { code?: string };
+    } | null;
     await clearAdminSession();
+    if (
+      authorizationPayload?.code === "MFA_REQUIRED" ||
+      authorizationPayload?.error?.code === "MFA_REQUIRED"
+    ) {
+      return Response.json(
+        {
+          code: "MFA_REQUIRED",
+          message:
+            "Esta conta precisa ativar e confirmar o segundo fator antes de acessar o painel.",
+        },
+        { status: 403 },
+      );
+    }
     return Response.json(
       { message: authorization.status === 403 ? "Esta conta não possui acesso administrativo." : "Não foi possível validar o acesso." },
       { status: authorization.status === 403 ? 403 : 401 },

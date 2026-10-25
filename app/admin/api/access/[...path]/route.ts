@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { adminApiFetch } from "../../../../../lib/admin/admin-session";
+import { adminApiFetch, clearAdminSession } from "../../../../../lib/admin/admin-session";
 
 const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
 const allowed = [
@@ -47,6 +47,28 @@ async function forward(request: NextRequest, context: RouteContext<"/admin/api/a
     body: body || undefined,
   });
   const responseBody = await upstream.text();
+  if (upstream.status === 403) {
+    const payload = (() => {
+      try {
+        return JSON.parse(responseBody) as {
+          code?: string;
+          error?: { code?: string };
+        };
+      } catch {
+        return null;
+      }
+    })();
+    if (payload?.code === "MFA_REQUIRED" || payload?.error?.code === "MFA_REQUIRED") {
+      await clearAdminSession();
+      return Response.json(
+        {
+          code: "MFA_REQUIRED",
+          message: "Entre novamente e confirme o segundo fator.",
+        },
+        { status: 401 },
+      );
+    }
+  }
   return new Response(responseBody || null, {
     status: upstream.status,
     headers: { "content-type": upstream.headers.get("content-type") || "application/json" },
