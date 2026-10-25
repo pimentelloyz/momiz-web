@@ -906,6 +906,13 @@
   font-weight: 900;
   white-space: nowrap;
 }
+.readinessTools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  flex-wrap: wrap;
+}
 .readinessReady {
   color: #28563a;
   background: #dcecdf;
@@ -999,6 +1006,47 @@
 .pilotGateCard button {
   justify-self: start;
 }
+.pilotGateHistory {
+  padding-top: 12px;
+  border-top: 1px solid #e5ddd5;
+}
+.pilotGateHistory summary {
+  color: #4d6958;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.pilotGateHistory > p {
+  margin: 10px 0 0;
+  color: #626d65;
+  font-size: 12px;
+}
+.pilotGateHistory ol {
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+  list-style: none;
+}
+.pilotGateHistory li {
+  padding: 11px;
+  border-radius: 10px;
+  background: #f5f1eb;
+}
+.pilotGateHistory li > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+}
+.pilotGateHistory time,
+.pilotGateHistory small {
+  color: #626d65;
+}
+.pilotGateHistory li p {
+  margin: 7px 0 4px;
+  font-size: 12px;
+}
 
 @media (max-width: 900px) {
   .adminGrid {
@@ -1087,6 +1135,10 @@
   }
   .pilotGateHeader {
     flex-direction: column;
+  }
+  .readinessTools {
+    align-items: flex-start;
+    justify-content: flex-start;
   }
   .reviewIdentity {
     align-items: flex-start;

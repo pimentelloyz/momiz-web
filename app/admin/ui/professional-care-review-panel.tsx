@@ -146,6 +146,12 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
+function csvCell(value: string | null | undefined) {
+  const normalized = value ?? "";
+  const safe = /^[=+\-@]/.test(normalized) ? `'${normalized}` : normalized;
+  return `"${safe.replaceAll('"', '""')}"`;
+}
+
 export function ProfessionalCareReviewPanel({
   onMessage,
   onSessionExpired,
@@ -356,6 +362,32 @@ export function ProfessionalCareReviewPanel({
     }
   }
 
+  function exportPilotAudit() {
+    if (!pilotReadiness) return;
+    const rows = [
+      ["gate", "nome", "estado anterior", "estado resultante", "justificativa", "evidência", "responsável", "data"],
+      ...pilotReadiness.gates.flatMap((gate) =>
+        gate.auditLogs.map((log) => [
+          gate.key,
+          gate.label,
+          log.previousStatus,
+          log.resultingStatus,
+          log.reason,
+          log.evidenceReference ?? "",
+          log.actor?.name || log.actor?.email || "Administrador removido",
+          log.createdAt,
+        ]),
+      ),
+    ];
+    const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `prontidao-piloto-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   const loadReports = useCallback(async () => {
     try {
       const data = (await adminApi(
@@ -493,9 +525,14 @@ export function ProfessionalCareReviewPanel({
             <p>Registre decisões e evidências externas antes de iniciar o piloto controlado.</p>
           </div>
           {pilotReadiness && (
-            <span className={pilotReadiness.ready ? styles.readinessReady : styles.readinessBlocked}>
-              {pilotReadiness.ready ? "Pronto para decisão" : `${pilotReadiness.approvedCount}/${pilotReadiness.requiredCount} aprovados`}
-            </span>
+            <div className={styles.readinessTools}>
+              <span className={pilotReadiness.ready ? styles.readinessReady : styles.readinessBlocked}>
+                {pilotReadiness.ready ? "Pronto para decisão" : `${pilotReadiness.approvedCount}/${pilotReadiness.requiredCount} aprovados`}
+              </span>
+              <button className={styles.secondaryButton} disabled={!pilotReadiness.gates.some((gate) => gate.auditLogs.length > 0)} onClick={exportPilotAudit}>
+                Exportar histórico CSV
+              </button>
+            </div>
           )}
         </div>
         <div className={styles.readinessNotice}>
@@ -536,6 +573,25 @@ export function ProfessionalCareReviewPanel({
                   <button className={styles.secondaryButton} disabled={savingPilotGate === gate.key} onClick={() => void savePilotGate(gate)}>
                     {savingPilotGate === gate.key ? "Registrando…" : "Registrar decisão"}
                   </button>
+                  <details className={styles.pilotGateHistory}>
+                    <summary>Histórico auditável ({gate.auditLogs.length})</summary>
+                    {gate.auditLogs.length === 0 ? (
+                      <p>Nenhuma decisão registrada para este gate.</p>
+                    ) : (
+                      <ol>
+                        {gate.auditLogs.map((log) => (
+                          <li key={log.id}>
+                            <div>
+                              <strong>{log.previousStatus} → {log.resultingStatus}</strong>
+                              <time dateTime={log.createdAt}>{formatDate(log.createdAt)}</time>
+                            </div>
+                            <p>{log.reason}</p>
+                            <small>{log.evidenceReference ? `Evidência: ${log.evidenceReference}` : "Sem referência de evidência"} · {log.actor?.name || log.actor?.email || "Administrador removido"}</small>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </details>
                 </article>
               );
             })}
