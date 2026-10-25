@@ -23,6 +23,7 @@ type Credential = {
   expiresAt: string | null;
   status: string;
   reviewReason: string | null;
+  documentFileName: string | null;
 };
 
 type ProfessionalProfile = {
@@ -77,6 +78,7 @@ export function ProfessionalCareReviewPanel({
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState(false);
+  const [openingCredential, setOpeningCredential] = useState<string | null>(null);
   const [operations, setOperations] = useState({ active: 0, paused: 0, auditEvents: 0 });
 
   const selected = useMemo(
@@ -187,6 +189,24 @@ export function ProfessionalCareReviewPanel({
     }
   }
 
+  async function openCredential(credential: Credential) {
+    if (!selected || !credential.documentFileName) return;
+    const popup = window.open("", "_blank", "noopener,noreferrer");
+    setOpeningCredential(credential.id);
+    try {
+      const result = (await adminApi(
+        `care/profiles/${selected.id}/credentials/${credential.id}/download-url`,
+      )) as { downloadUrl: string };
+      if (popup) popup.location.href = result.downloadUrl;
+      else window.location.assign(result.downloadUrl);
+    } catch (error) {
+      popup?.close();
+      onMessage(error instanceof Error ? error.message : "Não foi possível abrir o comprovante.");
+    } finally {
+      setOpeningCredential(null);
+    }
+  }
+
   return (
     <div className={styles.careReviewPanel}>
       <section className={styles.sectionCard}>
@@ -259,6 +279,15 @@ export function ProfessionalCareReviewPanel({
                       <div><strong>{credential.type}</strong><span>{credential.status}</span></div>
                       <p>{credential.registrationNumber || "Sem número"}{credential.jurisdiction ? ` · ${credential.jurisdiction}` : ""}</p>
                       <small>{credential.specialty || credential.issuer || "Sem especialidade informada"}</small>
+                      {credential.documentFileName && (
+                        <button
+                          className={styles.secondaryButton}
+                          disabled={openingCredential === credential.id}
+                          onClick={() => void openCredential(credential)}
+                        >
+                          {openingCredential === credential.id ? "Abrindo…" : "Ver comprovante"}
+                        </button>
+                      )}
                     </article>
                   ))}
                 </div>

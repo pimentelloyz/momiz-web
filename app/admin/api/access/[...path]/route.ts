@@ -20,6 +20,7 @@ const allowed = [
   new RegExp(`^access/package-policies/${uuid}/clone$`, "i"),
   new RegExp("^care/profiles$", "i"),
   new RegExp(`^care/profiles/${uuid}/review$`, "i"),
+  new RegExp(`^care/profiles/${uuid}/credentials/${uuid}/download-url$`, "i"),
   new RegExp("^care/relationships$", "i"),
   new RegExp("^care/audit-logs$", "i"),
 ];

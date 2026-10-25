@@ -130,6 +130,7 @@
 .credentialList article span { color: #4d6958; font-size: 11px; font-weight: 900; }
 .credentialList article p { margin: 8px 0 3px; }
 .credentialList article small { color: #626d65; }
+.credentialList article button { margin-top: 12px; }
 .reviewActions { padding-top: 22px; display: grid; gap: 14px; border-top: 1px solid #ded5cc; }
 .reviewActions label { display: grid; gap: 7px; font-size: 13px; font-weight: 800; }
 
