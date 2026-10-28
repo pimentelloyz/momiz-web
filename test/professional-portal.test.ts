@@ -63,6 +63,22 @@ import {
   mergeMessages,
   parseMessagePage,
 } from "../lib/professional/care-chat.ts";
+import {
+  isCompletePreferenceMatrix,
+  mergeNotifications,
+  notificationCategories,
+  notificationChannels,
+  notificationDeepLinkTarget,
+  parseNotificationPage,
+  parseNotificationPreferences,
+} from "../lib/professional/care-notifications.ts";
+import {
+  isAllowedNotificationPath,
+  isMt08NotificationPreferencesEnabled,
+  isMt08NotificationsEnabled,
+  normalizeNotificationQuery,
+  notificationUpstreamPath,
+} from "../lib/professional/notification-policy.ts";
 
 test("professional proxy exposes only explicit portal endpoints and methods", () => {
   assert.equal(isAllowedProfessionalCarePath("professional/profile"), true);
@@ -425,4 +441,34 @@ test("MT-06 contextual BFF is flag-off and exposes no attachment or entitlement 
   assert.equal(contextualCareUpstreamPath(pregnancyId, messages), `/api/care/v2/pregnancies/${pregnancyId}/${messages}`);
   const query = normalizeContextualCareQuery(messages, new URLSearchParams("limit=30&direction=OLDER")); assert.equal(query?.get("direction"), "OLDER");
   assert.equal(normalizeContextualCareQuery(messages, new URLSearchParams("direction=SIDEWAYS")), null);
+});
+
+test("MT-08 parses a complete six-category/two-channel matrix without client defaults", () => {
+  const preferences = notificationCategories.flatMap((category) => notificationChannels.map((channel) => ({ category, channel, enabled: !(category === "MESSAGE" && channel === "PUSH") })));
+  const parsed = parseNotificationPreferences({ version: 3, preferences, requestId: "req-preferences" });
+  assert.equal(parsed.preferences.length, 12); assert.equal(isCompletePreferenceMatrix(parsed.preferences), true);
+  assert.equal(parsed.preferences.find((item) => item.category === "MESSAGE" && item.channel === "PUSH")?.enabled, false);
+  assert.equal(isCompletePreferenceMatrix(parsed.preferences.slice(1)), false);
+});
+
+test("MT-08 feed minimizes source data and keeps delivery status technical", () => {
+  const page = parseNotificationPage({ notifications: [{ notificationId: "notice_1", category: "MESSAGE", type: "RECEIVED", status: "SENT", deepLink: "CARE_MESSAGES", title: "Nova atualização", body: "Abra o Momiz para conferir.", createdAt: "2026-10-28T19:00:00Z", sourceResourceId: "must-not-leak", patientName: "must-not-leak" }], requestId: "req-feed" });
+  assert.equal(page.items[0].status, "SENT"); assert.equal("sourceResourceId" in page.items[0], false); assert.equal("patientName" in page.items[0], false);
+  assert.equal(notificationDeepLinkTarget(page.items[0].deepLink), "care-chat-title");
+  assert.equal(notificationDeepLinkTarget("UNKNOWN"), "notification-feed-title");
+  assert.equal(mergeNotifications(page.items, page.items).length, 1);
+});
+
+test("MT-08 BFF flags and allowlist separate feed from preferences", () => {
+  assert.equal(isMt08NotificationsEnabled(undefined), false); assert.equal(isMt08NotificationPreferencesEnabled(undefined), false);
+  assert.equal(isAllowedNotificationPath("feed", "GET", false, false), false);
+  assert.equal(isAllowedNotificationPath("feed", "GET", true, false), true);
+  assert.equal(isAllowedNotificationPath("preferences", "GET", true, false), false);
+  assert.equal(isAllowedNotificationPath("preferences", "PATCH", false, true), true);
+  assert.equal(isAllowedNotificationPath("feed/notice_1/opened", "POST", true, false), true);
+  assert.equal(isAllowedNotificationPath("feed/../admin/opened", "POST", true, true), false);
+  assert.equal(notificationUpstreamPath("feed/notice_1/opened"), "/api/account/notifications/notice_1/opened");
+  const query = normalizeNotificationQuery("feed", new URLSearchParams("limit=20&category=MESSAGE&status=SENT")); assert.equal(query?.get("category"), "MESSAGE");
+  assert.equal(normalizeNotificationQuery("feed", new URLSearchParams("category=BIRTH")), null);
+  assert.equal(normalizeNotificationQuery("preferences", new URLSearchParams("profileId=other")), null);
 });

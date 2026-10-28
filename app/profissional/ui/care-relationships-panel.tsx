@@ -153,7 +153,7 @@ export function CareRelationshipsPanel({ context, sessionEpoch }: Props) {
   return (
     <section className={styles.relationshipPanel} aria-labelledby="care-relationships-title" data-cache-key={`${sessionEpoch}:${context.profileId}:${context.pregnancyId}:relationships`}>
       <div className={styles.sectionHeading}>
-        <div><span className={styles.kicker}>Equipe de cuidado</span><h2 id="care-relationships-title">Convites e vínculos</h2></div>
+        <div><span className={styles.kicker}>Equipe de cuidado</span><h2 id="care-relationships-title" tabIndex={-1}>Convites e vínculos</h2></div>
         <button className={styles.secondaryButton} disabled={loading || Boolean(busy)} onClick={() => void load()}>Atualizar</button>
       </div>
       <p className={styles.relationshipNotice}>O convite não libera dados. A paciente confirma o consentimento e os acessos antes da ativação.</p>

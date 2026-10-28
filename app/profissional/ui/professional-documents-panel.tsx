@@ -136,7 +136,7 @@ export function ProfessionalDocumentsPanel({ context, sessionEpoch }: Props) {
   function resetFilters() { setSearch(""); setQuery(""); setCategory(""); setDateFrom(""); setDateTo(""); setTag(""); }
 
   return <section className={styles.documentPanel} data-context-cache-key={`${sessionEpoch}:${context.profileId}:${context.pregnancyId}:documents`} aria-labelledby="shared-documents-title" aria-busy={phase === "loading" || loadingMore}>
-    <div className={styles.sectionHeading}><div><span className={styles.kicker}>MT-04 · documentos</span><h2 id="shared-documents-title">Compartilhados com você</h2></div><span aria-live="polite">{items.length} exibido(s)</span></div>
+    <div className={styles.sectionHeading}><div><span className={styles.kicker}>MT-04 · documentos</span><h2 id="shared-documents-title" tabIndex={-1}>Compartilhados com você</h2></div><span aria-live="polite">{items.length} exibido(s)</span></div>
     <p className={styles.relationshipNotice}>Acesso somente aos arquivos compartilhados neste vínculo. Uploads, compartilhamentos e versões permanecem com a paciente.</p>
     <div className={styles.documentFilters}>
       <label>Buscar pelo título<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} /></label>

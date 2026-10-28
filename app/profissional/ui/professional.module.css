@@ -833,6 +833,23 @@
 .chatComposer textarea:focus-visible { outline: 3px solid rgba(77, 105, 88, 0.2); outline-offset: 2px; }
 .chatComposer textarea:disabled { background: #f4f1ed; cursor: not-allowed; }
 .chatComposer > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.notificationPanel { width: min(1050px, 100%); margin-top: 24px; padding: 28px; display: grid; gap: 22px; border: 1px solid #ded5cc; border-radius: 28px; background: #fff; box-shadow: 0 22px 60px rgba(53, 75, 61, 0.07); }
+.notificationPreferences { padding: 20px; display: grid; gap: 16px; border-radius: 18px; background: #f4f1ed; }
+.notificationPreferences h3, .notificationPreferences p { margin: 0; }
+.notificationPreferences p { color: #667169; }
+.preferenceMatrix { display: grid; grid-template-columns: minmax(140px, 1fr) repeat(2, minmax(110px, .6fr)); gap: 8px; align-items: center; }
+.preferenceRow { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(140px, 1fr) repeat(2, minmax(110px, .6fr)); gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid #ded5cc; }
+.preferenceRow label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; }
+.preferenceRow input { width: 18px; height: 18px; }
+.notificationFilters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.notificationFilters label { display: grid; gap: 7px; font-size: 13px; font-weight: 800; }
+.notificationFilters select { width: 100%; min-height: 44px; padding: 9px 11px; color: #213128; border: 1px solid #cec5bc; border-radius: 12px; background: #fff; font: inherit; }
+.notificationFilters select:focus-visible { outline: 3px solid rgba(77, 105, 88, 0.2); outline-offset: 2px; }
+.notificationList { display: grid; gap: 12px; }
+.notificationCard { padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px; border: 1px solid #ded5cc; border-radius: 16px; }
+.notificationCard > div { display: grid; gap: 5px; }
+.notificationCard p { margin: 0; color: #48564d; }
+.notificationCard span, .notificationCard small { color: #667169; }
 
 @media (max-width: 1100px) {
   .contentGrid { grid-template-columns: 1fr; }
@@ -909,5 +926,12 @@
   .chatPanel { padding: 22px 16px; border-radius: 22px; }
   .communicationPolicy ul { columns: 1; }
   .ownMessage, .counterpartyMessage { width: 92%; }
+  .notificationPanel { padding: 22px 16px; border-radius: 22px; }
+  .notificationFilters { grid-template-columns: 1fr; }
+  .preferenceMatrix { display: block; }
+  .preferenceMatrix > strong { display: none; }
+  .preferenceRow { margin-top: 10px; grid-template-columns: 1fr; }
+  .preferenceRow label::before { width: 64px; color: #667169; content: "Canal"; }
+  .notificationCard { grid-template-columns: 1fr; }
   .unreadBadge { grid-column: 2; justify-self: start; }
 }

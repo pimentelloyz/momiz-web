@@ -23,6 +23,8 @@ export default async function ProfessionalPage({
         enableDocuments={process.env.NEXT_PUBLIC_ENABLE_MT04_DOCUMENT_SHARES === "true"}
         enableAppointments={process.env.NEXT_PUBLIC_ENABLE_MT05_APPOINTMENTS === "true"}
         enableChat={process.env.NEXT_PUBLIC_ENABLE_MT06_CARE_CHAT === "true"}
+        enableNotifications={process.env.NEXT_PUBLIC_ENABLE_MT08_NOTIFICATIONS === "true"}
+        enableNotificationPreferences={process.env.NEXT_PUBLIC_ENABLE_MT08_NOTIFICATION_PREFERENCES === "true"}
       />
     : <ProfessionalDashboard />;
 }

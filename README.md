@@ -93,6 +93,14 @@ chave idempotente no retry, confirma leitura até uma mensagem verificável e n�
 inclui entitlement ou anexos. Bloqueio/revogação falham fechados; o chat v1 não
 é alterado com a flag desligada.
 
+O feed MT-08 usa `NEXT_PUBLIC_ENABLE_MT08_NOTIFICATIONS=false`; a edição da
+matriz usa adicionalmente `NEXT_PUBLIC_ENABLE_MT08_NOTIFICATION_PREFERENCES=false`.
+Ambas ficam desligadas por padrão. O BFF aceita somente feed, preferências e
+abertura explícita profile-scoped. A interface materializa as seis categorias e
+os canais `IN_APP`/`PUSH`, reverte toggles em erro/conflito e trata deep links
+como enums allowlisted. Estados `SENT` e `OPENED` são técnicos e não representam
+leitura de mensagem, confirmação de consulta ou atendimento.
+
 ## Deploy na Vercel
 
 1. Importe este repositório na Vercel ou execute `vercel link`.
