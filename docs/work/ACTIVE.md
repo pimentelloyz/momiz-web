@@ -1,9 +1,15 @@
 # Trabalho ativo — Web
 
-- Status: pronto para novo trabalho
+- Status: pronto para a próxima tarefa
 - Atualizado em: 2026-10-28
-- Objetivo: nenhum
-- Próximo passo: registrar o próximo pacote antes de editar
+- Identificador: nenhum
+- Objetivo: aguardando definição.
+- Escopo: a definir.
+- Fora de escopo: a definir.
+- Critérios de aceite: a definir.
+- Verificações: a definir conforme o risco.
+- Dependências de API/app: nenhuma registrada para trabalho ativo.
+- Próximo passo: registrar o próximo pacote antes da implementação.
 
 ```markdown
 - Status:

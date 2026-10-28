@@ -41,6 +41,58 @@ O painel administrativo usa `FIREBASE_WEB_API_KEY`, `FIREBASE_PROJECT_ID` e
 prova a identidade; a allowlist da API continua sendo a autoridade que concede
 acesso administrativo.
 
+### MT-01 no localhost
+
+O contexto explícito de cuidado do portal profissional fica desligado por padrão.
+Para testar localmente contra uma API que já exponha os contratos MT-01, defina
+`NEXT_PUBLIC_ENABLE_MT01_CARE_CONTEXTS=true` em um arquivo local ignorado pelo Git
+e reinicie `npm run dev`. Sem a flag, `/profissional` preserva integralmente o
+dashboard legado. Com a flag, o portal usa apenas listagem/resolução de contextos
+e o resumo v2; não mistura dados das rotas legadas baseadas em `patientUserId`.
+
+O BFF espera `GET /api/account/care-profiles`,
+`POST /api/account/care-context/resolve` e
+`GET /api/care/v2/pregnancies/{pregnancyId}/summary`. A API continua sendo a
+autoridade de autorização; a preferência HTTP-only do web é somente conveniência.
+
+O canário MT-02 depende do MT-01 e também fica desligado. Para testar convites
+profissional→paciente, vínculos e scopes somente leitura, defina adicionalmente
+`NEXT_PUBLIC_ENABLE_MT02_CARE_RELATIONSHIPS=true`. A API local precisa expor os
+contratos v2 de invitations/relationships e manter suas flags centrais ativas.
+O portal não oferece edição de scopes ao profissional nem mistura rotas v1.
+
+O reader MT-03 também depende do contexto MT-01. Use
+`NEXT_PUBLIC_ENABLE_MT03_PROFESSIONAL_PATIENTS=true` somente com a API local v2
+e suas flags centrais ativas. O BFF mantém ETag e corpo por até 15 segundos em
+cache privado segregado por sessão/perfil/query; o navegador recebe `no-store`.
+A lista usa cursor opaco, busca com debounce e não oferece detalhe enquanto não
+existir rota v2 autorizada. O dashboard legado permanece inalterado com a flag
+desligada.
+
+O reader MT-04 depende do contexto MT-01 e permanece desligado por padrão. Para
+validar documentos compartilhados em localhost, defina
+`NEXT_PUBLIC_ENABLE_MT04_DOCUMENT_SHARES=true` junto das flags centrais da API.
+O BFF expõe somente lista, download efêmero, revisão e comentário profissionais;
+upload, grants e versões não fazem parte do portal. URLs de download não são
+persistidas, e documentos não verificados ou sem share ativo falham fechados.
+
+A agenda MT-05 também exige MT-01 e fica desligada por padrão com
+`NEXT_PUBLIC_ENABLE_MT05_APPOINTMENTS=false`. Em localhost, habilite-a somente
+com as rotas e flags v2 centrais ativas. A UI usa cursor, `allowedActions`, versão
+e timezone fornecidos pelo contrato; mutações reutilizam a chave idempotente até
+uma resposta definitiva, conflitos recarregam a agenda e o ICS é baixado de uma
+resposta autenticada `no-store`. Na criação profissional, o web envia o vínculo
+autorizado e a API deriva paciente e gestação; não há entrada manual de UUID
+clínico. A agenda v1 permanece intacta com a flag falsa.
+
+O chat profissional MT-06 depende do contexto/vínculo MT-01/MT-02 e permanece
+desligado com `NEXT_PUBLIC_ENABLE_MT06_CARE_CHAT=false`. Em localhost, habilite
+somente com as rotas e flags centrais v2. O composer exige o aviso
+`NON_EMERGENCY_V1`, pagina mensagens por cursor, reutiliza `clientMessageId` e
+chave idempotente no retry, confirma leitura até uma mensagem verificável e não
+inclui entitlement ou anexos. Bloqueio/revogação falham fechados; o chat v1 não
+é alterado com a flag desligada.
+
 ## Deploy na Vercel
 
 1. Importe este repositório na Vercel ou execute `vercel link`.

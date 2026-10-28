@@ -727,6 +727,113 @@
   to { transform: rotate(360deg); }
 }
 
+.contextHeaderLabel { display: grid; gap: 2px; min-width: 0; }
+.contextHeaderLabel span { color: #667169; font-size: 0.82rem; }
+.contextMain { display: grid; min-height: calc(100vh - 88px); padding: 40px 24px; place-items: start center; }
+.contextCard { width: min(720px, 100%); padding: 36px; display: grid; gap: 18px; border: 1px solid #ded5cc; border-radius: 28px; background: #fff; box-shadow: 0 22px 60px rgba(53, 75, 61, 0.09); }
+.contextCard h1, .contextCard p { margin: 0; }
+.contextSelector { display: grid; gap: 8px; font-weight: 700; }
+.contextSelector select { min-height: 48px; padding: 0 14px; color: #213128; border: 1px solid #cec5bc; border-radius: 14px; background: #fff; font: inherit; }
+.contextSelector select:focus-visible { outline: 3px solid rgba(77, 105, 88, 0.2); outline-offset: 2px; }
+.contextStatus, .contextReady { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 18px; border-radius: 18px; background: #f4f1ed; }
+.contextReady { align-items: flex-start; flex-direction: column; }
+.contextReady span, .contextReady small { color: #667169; }
+.contextCard .error { display: grid; gap: 10px; }
+.contextCard .error p { color: inherit; }
+.relationshipPanel { width: min(980px, 100%); margin-top: 24px; padding: 28px; display: grid; gap: 24px; border: 1px solid #ded5cc; border-radius: 28px; background: #fff; box-shadow: 0 22px 60px rgba(53, 75, 61, 0.07); }
+.relationshipNotice { margin: -12px 0 0; color: #667169; line-height: 1.6; }
+.relationshipInviteForm { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px; border-radius: 18px; background: #f4f1ed; }
+.relationshipInviteForm label, .terminateForm label { display: grid; gap: 8px; font-size: 13px; font-weight: 800; }
+.relationshipInviteForm input, .relationshipInviteForm select, .terminateForm textarea { width: 100%; min-height: 46px; padding: 10px 12px; color: #213128; border: 1px solid #cec5bc; border-radius: 12px; background: #fff; font: inherit; }
+.relationshipInviteForm input:focus-visible, .relationshipInviteForm select:focus-visible, .terminateForm textarea:focus-visible { outline: 3px solid rgba(77, 105, 88, 0.2); outline-offset: 2px; }
+.relationshipScopeChoice { grid-column: 1 / -1; grid-template-columns: auto 1fr !important; align-items: center; }
+.relationshipScopeChoice input { width: 20px; min-height: 20px; }
+.relationshipList { display: grid; gap: 12px; margin-top: 12px; }
+.relationshipCard { display: grid; gap: 14px; padding: 18px; border: 1px solid #ded5cc; border-radius: 16px; }
+.relationshipCard > div { display: grid; gap: 5px; }
+.relationshipCard span, .relationshipCard p, .relationshipCard li { color: #667169; }
+.relationshipCard ul { margin: 4px 0 0; padding-left: 20px; }
+.relationshipActions { display: flex !important; flex-wrap: wrap; gap: 10px; }
+.terminateForm { display: grid; gap: 12px; }
+.terminateForm textarea { min-height: 90px; resize: vertical; }
+.professionalPatientsPanel { width: min(1100px, 100%); margin-top: 24px; padding: 28px; display: grid; gap: 22px; border: 1px solid #ded5cc; border-radius: 28px; background: #fff; box-shadow: 0 22px 60px rgba(53, 75, 61, 0.07); }
+.patientReaderFilters { display: grid; grid-template-columns: minmax(220px, 1.5fr) 1fr 1fr; gap: 14px; }
+.patientReaderFilters label { display: grid; gap: 8px; font-size: 13px; font-weight: 800; }
+.patientReaderFilters input, .patientReaderFilters select { width: 100%; min-height: 46px; padding: 10px 12px; color: #213128; border: 1px solid #cec5bc; border-radius: 12px; background: #fff; font: inherit; }
+.patientReaderFilters input:focus-visible, .patientReaderFilters select:focus-visible { outline: 3px solid rgba(77, 105, 88, 0.2); outline-offset: 2px; }
+.professionalPatientGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.professionalPatientCard, .professionalPatientCardUnavailable { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 18px; border: 1px solid #ded5cc; border-radius: 16px; }
+.professionalPatientCardUnavailable { background: #f4f1ed; }
+.professionalPatientCard > div, .professionalPatientCardUnavailable > div { display: grid; gap: 4px; min-width: 0; }
+.professionalPatientCard span, .professionalPatientCard small, .professionalPatientCardUnavailable span, .professionalPatientCardUnavailable p { color: #667169; }
+.professionalPatientCard p, .professionalPatientCard small, .professionalPatientCardUnavailable p, .professionalPatientCardUnavailable small { grid-column: 2 / -1; margin: 0; }
+.unreadBadge { padding: 6px 9px; color: #365242 !important; border-radius: 999px; background: #e7f0e9; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.readerRequestId { color: #667169; }
+.documentPanel { width: min(1100px, 100%); margin-top: 24px; padding: 28px; display: grid; gap: 22px; border: 1px solid #ded5cc; border-radius: 28px; background: #fff; box-shadow: 0 22px 60px rgba(53, 75, 61, 0.07); }
+.documentFilters { display: grid; grid-template-columns: minmax(220px, 1.5fr) 1fr 1fr 1fr 1fr; gap: 12px; }
+.documentFilters label, .collaborationForm label { display: grid; gap: 8px; font-size: 13px; font-weight: 800; }
+.documentFilters input, .documentFilters select, .collaborationForm textarea { width: 100%; min-height: 44px; padding: 9px 11px; color: #213128; border: 1px solid #cec5bc; border-radius: 12px; background: #fff; font: inherit; }
+.documentFilters input:focus-visible, .documentFilters select:focus-visible, .collaborationForm textarea:focus-visible { outline: 3px solid rgba(77, 105, 88, 0.2); outline-offset: 2px; }
+.documentGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.documentCard { display: grid; gap: 14px; padding: 18px; border: 1px solid #ded5cc; border-radius: 16px; }
+.documentCard > div:first-child { display: grid; gap: 4px; }
+.documentCard span, .documentCard p, .documentCard dd { color: #667169; }
+.documentCard p { margin: 0; }
+.documentCard dl { margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.documentCard dl div { display: grid; gap: 2px; }
+.documentCard dt { color: #667169; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.documentCard dd { margin: 0; overflow-wrap: anywhere; }
+.documentBlocked { width: fit-content; padding: 6px 9px; border-radius: 999px; background: #f4e7e2; color: #704839 !important; font-size: 12px; font-weight: 800; }
+.collaborationPanel { padding: 20px; display: grid; gap: 18px; border: 1px solid #d6ddd7; border-radius: 18px; background: #fafbf9; }
+.collaborationForm { display: grid; gap: 12px; }
+.collaborationForm textarea { min-height: 92px; resize: vertical; }
+.collaborationForm button { justify-self: start; }
+.commentList { display: grid; gap: 10px; }
+.commentList article { padding: 12px; border-radius: 12px; background: #fff; }
+.commentList p { margin: 0 0 6px; white-space: pre-wrap; }
+.appointmentPanel { width: min(1100px, 100%); margin-top: 24px; padding: 28px; display: grid; gap: 22px; border: 1px solid #ded5cc; border-radius: 28px; background: #fff; box-shadow: 0 22px 60px rgba(53, 75, 61, 0.07); }
+.appointmentFilters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.appointmentFilters label, .appointmentForm label, .rescheduleForm label { display: grid; gap: 7px; font-size: 13px; font-weight: 800; }
+.appointmentFilters input, .appointmentFilters select, .appointmentForm input, .appointmentForm select, .rescheduleForm input { width: 100%; min-height: 44px; padding: 9px 11px; color: #213128; border: 1px solid #cec5bc; border-radius: 12px; background: #fff; font: inherit; }
+.appointmentFilters input:focus-visible, .appointmentFilters select:focus-visible, .appointmentForm input:focus-visible, .appointmentForm select:focus-visible, .rescheduleForm input:focus-visible { outline: 3px solid rgba(77, 105, 88, 0.2); outline-offset: 2px; }
+.appointmentForm { padding: 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; border-radius: 18px; background: #f4f1ed; }
+.appointmentForm h3, .appointmentForm > p, .appointmentForm button { grid-column: 1 / -1; justify-self: start; }
+.appointmentForm h3 { margin: 0; }
+.appointmentForm small { color: #667169; font-weight: 400; }
+.v2AppointmentList { display: grid; gap: 14px; }
+.v2AppointmentCard { padding: 18px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; border: 1px solid #ded5cc; border-radius: 16px; }
+.v2AppointmentCard > div:first-child { display: grid; gap: 5px; }
+.v2AppointmentCard span, .v2AppointmentCard time { color: #667169; }
+.v2AppointmentCard > .relationshipActions, .pendingSlot { grid-column: 1 / -1; }
+.pendingSlot { padding: 14px; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; border-radius: 12px; background: #f4f1ed; }
+.appointmentDetail { padding: 20px; display: grid; gap: 18px; border: 1px solid #d6ddd7; border-radius: 18px; background: #fafbf9; }
+.rescheduleForm { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.rescheduleForm > strong, .rescheduleForm > button { grid-column: 1 / -1; justify-self: start; }
+.appointmentHistory { display: grid; gap: 10px; }
+.appointmentHistory article { padding: 12px; display: grid; gap: 4px; border-radius: 12px; background: #fff; }
+.appointmentHistory small { color: #667169; }
+.chatPanel { width: min(900px, 100%); margin-top: 24px; padding: 28px; display: grid; gap: 20px; border: 1px solid #ded5cc; border-radius: 28px; background: #fff; box-shadow: 0 22px 60px rgba(53, 75, 61, 0.07); }
+.communicationPolicy { padding: 16px; display: grid; gap: 8px; border-radius: 16px; background: #f4f1ed; }
+.communicationPolicy p, .communicationPolicy ul { margin: 0; color: #667169; }
+.communicationPolicy ul { padding-left: 20px; columns: 2; }
+.messageList { min-height: 180px; max-height: 560px; padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; border: 1px solid #e4ddd5; border-radius: 18px; background: #fafbf9; }
+.ownMessage, .counterpartyMessage { width: min(78%, 620px); padding: 12px 14px; display: grid; gap: 6px; border-radius: 16px; overflow-wrap: anywhere; }
+.ownMessage { align-self: flex-end; background: #e7f0e9; border-bottom-right-radius: 5px; }
+.counterpartyMessage { align-self: flex-start; background: #fff; border: 1px solid #e4ddd5; border-bottom-left-radius: 5px; }
+.ownMessage p, .counterpartyMessage p { margin: 0; white-space: pre-wrap; }
+.ownMessage small, .counterpartyMessage small { color: #667169; }
+.nonEmergencyWarning { padding: 16px; display: grid; gap: 7px; border: 1px solid #d8b766; border-radius: 16px; background: #fff8e7; }
+.nonEmergencyWarning p { margin: 0; color: #66552c; }
+.nonEmergencyWarning label { display: flex; align-items: flex-start; gap: 9px; font-weight: 700; }
+.nonEmergencyWarning input { width: 18px; height: 18px; margin-top: 2px; }
+.failedMessage { padding: 14px; display: grid; gap: 10px; border-radius: 14px; background: #fff8e7; }
+.chatComposer { display: grid; gap: 9px; }
+.chatComposer label { font-size: 13px; font-weight: 800; }
+.chatComposer textarea { width: 100%; min-height: 110px; padding: 12px; color: #213128; border: 1px solid #cec5bc; border-radius: 14px; background: #fff; font: inherit; resize: vertical; }
+.chatComposer textarea:focus-visible { outline: 3px solid rgba(77, 105, 88, 0.2); outline-offset: 2px; }
+.chatComposer textarea:disabled { background: #f4f1ed; cursor: not-allowed; }
+.chatComposer > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
 @media (max-width: 1100px) {
   .contentGrid { grid-template-columns: 1fr; }
   .filters { grid-template-columns: repeat(3, 1fr); }
@@ -734,6 +841,9 @@
   .clinicWorkspace { grid-template-columns: 1fr; }
   .clinicTabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .teamColumns { grid-template-columns: 1fr; }
+  .documentFilters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .appointmentForm { grid-template-columns: 1fr; }
+  .appointmentForm h3, .appointmentForm > p, .appointmentForm button { grid-column: auto; }
 }
 
 @media (max-width: 760px) {
@@ -783,4 +893,21 @@
   .inviteLink span { grid-column: auto; }
   .memberCard { grid-template-columns: minmax(0, 1fr) auto; }
   .memberCard .textButton { grid-column: 1 / -1; justify-self: start; }
+  .contextMain { padding: 24px 12px; }
+  .contextCard { padding: 26px 20px; border-radius: 22px; }
+  .relationshipPanel { padding: 22px 16px; border-radius: 22px; }
+  .relationshipInviteForm { grid-template-columns: 1fr; }
+  .relationshipScopeChoice { grid-column: auto; }
+  .professionalPatientsPanel { padding: 22px 16px; border-radius: 22px; }
+  .patientReaderFilters, .professionalPatientGrid { grid-template-columns: 1fr; }
+  .professionalPatientCard, .professionalPatientCardUnavailable { grid-template-columns: auto minmax(0, 1fr); }
+  .documentPanel { padding: 22px 16px; border-radius: 22px; }
+  .documentFilters, .documentGrid { grid-template-columns: 1fr; }
+  .appointmentPanel { padding: 22px 16px; border-radius: 22px; }
+  .appointmentFilters, .rescheduleForm { grid-template-columns: 1fr; }
+  .rescheduleForm > strong, .rescheduleForm > button { grid-column: auto; }
+  .chatPanel { padding: 22px 16px; border-radius: 22px; }
+  .communicationPolicy ul { columns: 1; }
+  .ownMessage, .counterpartyMessage { width: 92%; }
+  .unreadBadge { grid-column: 2; justify-self: start; }
 }
