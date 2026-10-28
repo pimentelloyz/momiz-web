@@ -1,0 +1,18 @@
+export const laborEventTypes = ["CONTRACTION", "MEMBRANE_RUPTURE_SUSPICION"] as const;
+export type LaborEventType = (typeof laborEventTypes)[number] | "UNKNOWN";
+export const laborSyncStatuses = ["APPLIED", "REPLAYED", "CONFLICT", "INVALID"] as const;
+export type LaborSyncStatus = (typeof laborSyncStatuses)[number] | "NOT_REPORTED" | "UNKNOWN";
+export type LaborEvent = { id: string; type: LaborEventType; occurredAt: string; durationSeconds: number | null; version: number; syncStatus: LaborSyncStatus };
+export type LaborEventPage = { items: LaborEvent[]; nextCursor: string | null; requestId: string };
+function object(value: unknown): Record<string, unknown> | null { return typeof value === "object" && value !== null ? value as Record<string, unknown> : null; }
+function text(value: unknown) { return typeof value === "string" ? value : ""; }
+function enumValue<T extends readonly string[]>(value: unknown, values: T): T[number] | "UNKNOWN" { return typeof value === "string" && values.includes(value) ? value as T[number] : "UNKNOWN"; }
+export function parseLaborEventPage(value: unknown): LaborEventPage {
+  const root = object(value); const values = Array.isArray(root?.items) ? root.items : Array.isArray(root?.events) ? root.events : null; if (!root || !values) throw new Error("LABOR_EVENT_RESPONSE_INVALID");
+  return { nextCursor: typeof root.nextCursor === "string" ? root.nextCursor : null, requestId: text(root.requestId), items: values.map((raw) => { const item = object(raw); const type = enumValue(item?.type || item?.eventType, laborEventTypes); const occurredAt = text(item?.occurredAt || item?.startedAt || item?.observedAt); if (!item || !text(item.id) || !occurredAt) throw new Error("LABOR_EVENT_RESPONSE_INVALID"); return { id: text(item.id), type, occurredAt, durationSeconds: Number.isInteger(item.durationSeconds) && Number(item.durationSeconds) >= 0 ? Number(item.durationSeconds) : null, version: Number.isInteger(item.version) ? Number(item.version) : 0, syncStatus: item.syncStatus === undefined ? "NOT_REPORTED" : enumValue(item.syncStatus, laborSyncStatuses) }; }) };
+}
+export function mergeLaborEvents(current: LaborEvent[], incoming: LaborEvent[]) { const seen = new Set(current.map((item) => item.id)); return [...current, ...incoming.filter((item) => !seen.has(item.id))].sort((a, b) => a.occurredAt.localeCompare(b.occurredAt) || a.type.localeCompare(b.type) || a.id.localeCompare(b.id)); }
+export function laborEventLabel(type: LaborEventType) { return ({ CONTRACTION: "Contração registrada", MEMBRANE_RUPTURE_SUSPICION: "Suspeita de bolsa rompida registrada", UNKNOWN: "Evento indisponível" } as const)[type]; }
+export function laborSyncLabel(status: LaborSyncStatus) { return ({ APPLIED: "Aplicado", REPLAYED: "Replay confirmado", CONFLICT: "Conflito de versão", INVALID: "Registro inválido", NOT_REPORTED: "Estado não informado", UNKNOWN: "Sync indisponível" } as const)[status]; }
+export const LABOR_SAFETY_TEXT_VERSION = "LABOR_SAFETY_PT_BR_V1";
+export const LABOR_SAFETY_TEXT_PT_BR = "Este recurso registra informações e não diagnostica trabalho de parto nem substitui avaliação. Se houver suspeita de bolsa rompida, procure avaliação da maternidade ou urgência agora, mesmo sem contrações. Observe horário, cor e odor; use absorvente externo, não tampão, e não aguarde resposta no chat. Entre em contato imediatamente se houver bolsa rompida, sangramento vaginal, movimentos fetais reduzidos, sinais antes de 37 semanas, contração com mais de 2 minutos ou 6 ou mais em 10 minutos, forte vontade de fazer força ou parto iminente. Em risco imediato, ligue SAMU 192. Siga também o plano individual da sua equipe.";

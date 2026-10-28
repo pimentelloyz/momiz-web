@@ -24,6 +24,7 @@ import {
   isMt04DocumentSharesEnabled,
   isMt05AppointmentsEnabled,
   isMt06CareChatEnabled,
+  isMt07LaborEventsEnabled,
   isValidCareContextPath,
   normalizeProfessionalPatientsQuery,
   normalizeContextualCareQuery,
@@ -79,6 +80,9 @@ import {
   normalizeNotificationQuery,
   notificationUpstreamPath,
 } from "../lib/professional/notification-policy.ts";
+import { LABOR_SAFETY_TEXT_PT_BR, LABOR_SAFETY_TEXT_VERSION, laborEventLabel, mergeLaborEvents, parseLaborEventPage } from "../lib/professional/labor-events.ts";
+import { parseCareEntitlement, parseChatEntitlement } from "../lib/professional/care-entitlements.ts";
+import { entitlementUpstreamPath, isAllowedEntitlementPath, isMt09ChatSponsorshipEnabled, isMt09EntitlementsEnabled } from "../lib/professional/entitlement-policy.ts";
 
 test("professional proxy exposes only explicit portal endpoints and methods", () => {
   assert.equal(isAllowedProfessionalCarePath("professional/profile"), true);
@@ -471,4 +475,47 @@ test("MT-08 BFF flags and allowlist separate feed from preferences", () => {
   const query = normalizeNotificationQuery("feed", new URLSearchParams("limit=20&category=MESSAGE&status=SENT")); assert.equal(query?.get("category"), "MESSAGE");
   assert.equal(normalizeNotificationQuery("feed", new URLSearchParams("category=BIRTH")), null);
   assert.equal(normalizeNotificationQuery("preferences", new URLSearchParams("profileId=other")), null);
+});
+
+test("MT-07 professional reader exposes technical events without clinical detail", () => {
+  const page = parseLaborEventPage({ events: [{ id: "event-1", eventType: "CONTRACTION", startedAt: "2026-10-28T20:00:00Z", durationSeconds: 54, version: 2, syncStatus: "APPLIED", color: "BLOODY", odor: "UNUSUAL", observation: "must-not-leak" }], requestId: "req-labor" });
+  assert.equal(page.items[0].type, "CONTRACTION"); assert.equal(laborEventLabel(page.items[0].type), "Contração registrada");
+  assert.equal("color" in page.items[0], false); assert.equal("odor" in page.items[0], false); assert.equal("observation" in page.items[0], false);
+  assert.equal(mergeLaborEvents(page.items, page.items).length, 1);
+  assert.equal(LABOR_SAFETY_TEXT_VERSION, "LABOR_SAFETY_PT_BR_V1"); assert.match(LABOR_SAFETY_TEXT_PT_BR, /SAMU 192/);
+});
+
+test("MT-07 BFF is flag-off and permits professional read only", () => {
+  const pregnancyId = "3dd3776b-683a-4861-b555-ae528fb99518";
+  assert.equal(isMt07LaborEventsEnabled(undefined), false); assert.equal(isMt07LaborEventsEnabled("true"), true);
+  assert.equal(isAllowedContextualCarePath("labor-events", "GET", false, false, false, false, false), false);
+  assert.equal(isAllowedContextualCarePath("labor-events", "GET", false, false, false, false, true), true);
+  assert.equal(isAllowedContextualCarePath("labor-events", "POST", false, false, false, false, true), false);
+  assert.equal(isAllowedContextualCarePath("labor-events/export", "GET", false, false, false, false, true), false);
+  assert.equal(contextualCareUpstreamPath(pregnancyId, "labor-events"), `/api/care/v2/pregnancies/${pregnancyId}/labor-events`);
+  assert.equal(normalizeContextualCareQuery("labor-events", new URLSearchParams("limit=101")), null);
+});
+
+test("MT-09 profile plans and downgrade preserve server-driven usage/history semantics", () => {
+  const summary = parseCareEntitlement({ entitlement: { tier: "FREE", status: "EXPIRED", catalogVersion: "care-v1", version: 4 }, usage: [{ capability: "care.relationship.create", allowed: false, reason: "CARE_QUOTA_EXCEEDED", limit: 3, used: 3, remaining: 0 }], offers: [{ tier: "STANDARD", currency: "BRL", formattedReferencePrice: "Referência retornada", referencePrice: 59.9, checkoutAvailable: false }], requestId: "req-entitlement" });
+  assert.equal(summary.tier, "FREE"); assert.equal(summary.status, "EXPIRED"); assert.equal(summary.usage[0].allowed, false); assert.equal(summary.usage[0].remaining, 0);
+  assert.equal(summary.offers[0].formattedReferencePrice, "Referência retornada"); assert.equal(summary.offers[0].checkoutAvailable, false);
+  assert.equal("historyHidden" in summary, false); assert.equal("checkoutUrl" in summary.offers[0], false);
+});
+
+test("MT-09 chat uses server OR sponsorship without exposing sponsor identity", () => {
+  const professionalProfileId = "8e954350-5c54-4d7c-a58c-06cb7ac85919";
+  const own = parseChatEntitlement({ allowed: true, reason: "PROFESSIONAL_SPONSOR", tier: "STANDARD", catalogVersion: "care-v1", sponsorProfileId: professionalProfileId, requestId: "req-own" }, professionalProfileId);
+  const other = parseChatEntitlement({ allowed: true, reason: "PATIENT_SPONSOR", tier: "FREE", catalogVersion: "care-v1", sponsorProfileId: "9dd3776b-683a-4861-b555-ae528fb99518", requestId: "req-other" }, professionalProfileId);
+  assert.equal(own.sponsoredByCurrentProfile, true); assert.equal(other.sponsoredByOtherProfile, true); assert.equal(other.allowed, true); assert.equal("sponsorProfileId" in other, false);
+});
+
+test("MT-09 BFF isolates profiles A/B and exposes read-only summary/sponsorship", () => {
+  const relationshipId = "5dd3776b-683a-4861-b555-ae528fb99518"; const profileA = "8e954350-5c54-4d7c-a58c-06cb7ac85919"; const profileB = "9dd3776b-683a-4861-b555-ae528fb99518";
+  assert.equal(isMt09EntitlementsEnabled(undefined), false); assert.equal(isMt09ChatSponsorshipEnabled(undefined), false);
+  assert.equal(isAllowedEntitlementPath("summary", "GET", false, false), false); assert.equal(isAllowedEntitlementPath("summary", "GET", true, false), true);
+  assert.equal(isAllowedEntitlementPath(`message/${relationshipId}`, "GET", false, true), true); assert.equal(isAllowedEntitlementPath("summary", "POST", true, true), false);
+  assert.equal(entitlementUpstreamPath(`message/${relationshipId}`), `/api/care/v2/relationships/${relationshipId}/message-entitlement`);
+  assert.notDeepEqual([...professionalProfileHeaders(profileA)], [...professionalProfileHeaders(profileB)]);
+  assert.equal(isAllowedEntitlementPath("restore", "POST", true, true), false);
 });

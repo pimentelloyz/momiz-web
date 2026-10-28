@@ -25,6 +25,9 @@ export default async function ProfessionalPage({
         enableChat={process.env.NEXT_PUBLIC_ENABLE_MT06_CARE_CHAT === "true"}
         enableNotifications={process.env.NEXT_PUBLIC_ENABLE_MT08_NOTIFICATIONS === "true"}
         enableNotificationPreferences={process.env.NEXT_PUBLIC_ENABLE_MT08_NOTIFICATION_PREFERENCES === "true"}
+        enableLaborEvents={process.env.NEXT_PUBLIC_ENABLE_MT07_LABOR_EVENTS === "true"}
+        enableEntitlements={process.env.NEXT_PUBLIC_ENABLE_MT09_ENTITLEMENTS === "true"}
+        enableChatSponsorship={process.env.NEXT_PUBLIC_ENABLE_MT09_CHAT_SPONSORSHIP === "true"}
       />
     : <ProfessionalDashboard />;
 }

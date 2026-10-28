@@ -101,6 +101,17 @@ os canais `IN_APP`/`PUSH`, reverte toggles em erro/conflito e trata deep links
 como enums allowlisted. Estados `SENT` e `OPENED` são técnicos e não representam
 leitura de mensagem, confirmação de consulta ou atendimento.
 
+O reader profissional MT-07 usa `NEXT_PUBLIC_ENABLE_MT07_LABOR_EVENTS=false`.
+Ele mostra somente eventos compartilhados e estado técnico de sync autorizados
+pela API, sem captura/correção/export, contador, diagnóstico ou recomendação.
+Notificação enviada/aberta não é apresentada como atendimento.
+
+O painel MT-09 usa `NEXT_PUBLIC_ENABLE_MT09_ENTITLEMENTS=false`; a decisão OR de
+chat por vínculo usa adicionalmente `NEXT_PUBLIC_ENABLE_MT09_CHAT_SPONSORSHIP=false`.
+Tiers, catálogo, uso, limites, grace e referências de preço vêm da API. A UI não
+hardcode preço cobrável, não ativa plano e não inicia checkout. Downgrade pode
+limitar novas ações, mas nunca oculta leitura, histórico ou recursos de segurança.
+
 ## Deploy na Vercel
 
 1. Importe este repositório na Vercel ou execute `vercel link`.

@@ -12,6 +12,8 @@ import { ProfessionalDocumentsPanel } from "./professional-documents-panel";
 import { ProfessionalAppointmentsPanel } from "./professional-appointments-panel";
 import { ProfessionalChatPanel } from "./professional-chat-panel";
 import { ProfessionalNotificationsPanel } from "./professional-notifications-panel";
+import { ProfessionalLaborEventsPanel } from "./professional-labor-events-panel";
+import { ProfessionalEntitlementsPanel } from "./professional-entitlements-panel";
 
 type Phase = "loading" | "empty" | "select" | "switching" | "ready" | "denied" | "error";
 type Option = CareContextSelection & { profileVersion: number; label: string; status: string };
@@ -40,6 +42,9 @@ export function Mt01ProfessionalPortal({
   enableChat = false,
   enableNotifications = false,
   enableNotificationPreferences = false,
+  enableLaborEvents = false,
+  enableEntitlements = false,
+  enableChatSponsorship = false,
 }: {
   enableRelationships?: boolean;
   enablePatientReader?: boolean;
@@ -48,6 +53,9 @@ export function Mt01ProfessionalPortal({
   enableChat?: boolean;
   enableNotifications?: boolean;
   enableNotificationPreferences?: boolean;
+  enableLaborEvents?: boolean;
+  enableEntitlements?: boolean;
+  enableChatSponsorship?: boolean;
 }) {
   const router = useRouter();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -164,6 +172,9 @@ export function Mt01ProfessionalPortal({
         {phase === "ready" && active && bootstrap && enableNotifications && (
           <ProfessionalNotificationsPanel key={`${bootstrap.sessionEpoch}:${active.context.profileId}:notifications`} profileId={active.context.profileId} sessionEpoch={bootstrap.sessionEpoch} enablePreferences={enableNotificationPreferences} />
         )}
+        {phase === "ready" && active && bootstrap && enableEntitlements && (
+          <ProfessionalEntitlementsPanel key={`${bootstrap.sessionEpoch}:${active.context.profileId}:entitlements`} context={active.context} sessionEpoch={bootstrap.sessionEpoch} enableChatSponsorship={enableChatSponsorship} />
+        )}
         {phase === "ready" && active && bootstrap && enablePatientReader && (
           <ProfessionalPatientsPanel
             key={`${bootstrap.sessionEpoch}:${active.context.profileId}:patients`}
@@ -195,6 +206,9 @@ export function Mt01ProfessionalPortal({
         )}
         {phase === "ready" && active && bootstrap && enableChat && (
           <ProfessionalChatPanel key={`${bootstrap.sessionEpoch}:${active.context.profileId}:${active.context.pregnancyId}:${active.context.relationshipId}:chat`} context={active.context} sessionEpoch={bootstrap.sessionEpoch} />
+        )}
+        {phase === "ready" && active && bootstrap && enableLaborEvents && (
+          <ProfessionalLaborEventsPanel key={`${bootstrap.sessionEpoch}:${active.context.profileId}:${active.context.pregnancyId}:labor-events`} context={active.context} sessionEpoch={bootstrap.sessionEpoch} />
         )}
       </main>
     </div>

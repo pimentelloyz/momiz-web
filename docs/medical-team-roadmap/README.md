@@ -16,6 +16,8 @@ Leia, nesta ordem:
 8. [Rastreabilidade web](WEB_TRACEABILITY.md).
 9. [Binding web MT-01](MT01_WEB_CONTRACT.md), obrigatório antes de implementar contexto no cliente.
 10. [Binding web MT-08](MT08_WEB_BINDING.md), para feed, preferências, estados técnicos e deep links de notificações.
+11. [Binding web MT-07](MT07_WEB_BINDING.md), para a visão profissional não diagnóstica de eventos compartilhados.
+12. [Binding web MT-09](MT09_WEB_BINDING.md), para planos, quotas, grace e sponsorship server-driven.
 
 Código existente e contratos OpenAPI publicados são fatos do sistema atual. O roadmap descreve intenção; uma rota permitida no proxy, um tipo local, um mock ou este documento não provam implementação.
 

@@ -19,6 +19,7 @@ export function isMt04DocumentSharesEnabled(value = process.env.NEXT_PUBLIC_ENAB
 
 export function isMt05AppointmentsEnabled(value = process.env.NEXT_PUBLIC_ENABLE_MT05_APPOINTMENTS) { return value === "true"; }
 export function isMt06CareChatEnabled(value = process.env.NEXT_PUBLIC_ENABLE_MT06_CARE_CHAT) { return value === "true"; }
+export function isMt07LaborEventsEnabled(value = process.env.NEXT_PUBLIC_ENABLE_MT07_LABOR_EVENTS) { return value === "true"; }
 
 export function isAllowedContextualCarePath(
   path: string,
@@ -27,6 +28,7 @@ export function isAllowedContextualCarePath(
   mt04Enabled = isMt04DocumentSharesEnabled(),
   mt05Enabled = isMt05AppointmentsEnabled(),
   mt06Enabled = isMt06CareChatEnabled(),
+  mt07Enabled = isMt07LaborEventsEnabled(),
 ) {
   if (method === "GET" && path === "summary") return true;
   if (mt04Enabled) {
@@ -45,6 +47,7 @@ export function isAllowedContextualCarePath(
     if (method === "GET" && new RegExp(`^relationships/${uuidSource}/messages(?:/policy)?$`, "i").test(path)) return true;
     if (method === "POST" && new RegExp(`^relationships/${uuidSource}/messages(?:/read-receipts)?$`, "i").test(path)) return true;
   }
+  if (mt07Enabled && method === "GET" && path === "labor-events") return true;
   if (!mt02Enabled) return false;
   if (method === "GET" && path === "relationships") return true;
   if (method === "POST" && path === "invitations") return true;
@@ -54,7 +57,7 @@ export function isAllowedContextualCarePath(
 }
 
 export function contextualCareUpstreamPath(pregnancyId: string, path: string) {
-  if (path === "summary" || path === "relationships" || path === "invitations" || path === "documents" || path === "appointments" || path === "appointments/calendar.ics" || new RegExp(`^documents/${uuidSource}/(download-url|collaboration|review|comments)$`, "i").test(path) || new RegExp(`^appointments/${uuidSource}(?:/(?:events|respond|reschedule|reschedule/respond|cancel|complete|no-show))?$`, "i").test(path) || new RegExp(`^relationships/${uuidSource}/messages(?:/(?:read-receipts|policy))?$`, "i").test(path)) {
+  if (path === "summary" || path === "relationships" || path === "invitations" || path === "documents" || path === "appointments" || path === "appointments/calendar.ics" || path === "labor-events" || new RegExp(`^documents/${uuidSource}/(download-url|collaboration|review|comments)$`, "i").test(path) || new RegExp(`^appointments/${uuidSource}(?:/(?:events|respond|reschedule|reschedule/respond|cancel|complete|no-show))?$`, "i").test(path) || new RegExp(`^relationships/${uuidSource}/messages(?:/(?:read-receipts|policy))?$`, "i").test(path)) {
     return `/api/care/v2/pregnancies/${pregnancyId}/${path}`;
   }
   if (new RegExp(`^invitations/${uuidSource}/(resend|decline)$`, "i").test(path) || new RegExp(`^invitations/${uuidSource}$`, "i").test(path)) {
@@ -71,6 +74,7 @@ export function contextualCareRequiresIdempotency(path: string, method: string) 
 
 const documentQueryKeys = new Set(["cursor", "limit", "q", "clinicalCategory", "clinicalDateFrom", "clinicalDateTo", "tags"]);
 export function normalizeContextualCareQuery(path: string, input: URLSearchParams) {
+  if (path === "labor-events") return normalizeLaborEventQuery(input);
   if (/^relationships\/[0-9a-f-]+\/messages$/i.test(path)) return normalizeMessageQuery(input);
   if (path === "appointments" || path === "appointments/calendar.ics" || /\/events$/i.test(path)) return normalizeAppointmentQuery(path, input);
   if (path !== "documents") return input.size === 0 ? new URLSearchParams() : null;
@@ -95,6 +99,12 @@ export function normalizeContextualCareQuery(path: string, input: URLSearchParam
   }
   if (!normalized.has("limit")) normalized.set("limit", "25");
   return normalized;
+}
+
+function normalizeLaborEventQuery(input: URLSearchParams) {
+  const allowed = new Set(["cursor", "limit"]); if ([...input.keys()].some((key) => !allowed.has(key))) return null;
+  const limit = input.get("limit"); const cursor = input.get("cursor"); if (limit && (!/^\d+$/.test(limit) || Number(limit) < 1 || Number(limit) > 100)) return null; if (cursor && (cursor.length > 2048 || !/^[A-Za-z0-9._~-]+$/.test(cursor))) return null;
+  const result = new URLSearchParams({ limit: limit || "30" }); if (cursor) result.set("cursor", cursor); return result;
 }
 
 function normalizeMessageQuery(input: URLSearchParams) {
