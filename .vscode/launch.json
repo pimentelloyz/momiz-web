@@ -1,0 +1,40 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Momiz Web • API local → dados DEV",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "API_BASE_URL": "http://localhost:3020",
+        "SITE_URL": "http://localhost:3021"
+      }
+    },
+    {
+      "name": "Momiz Web • API local → dados PROD",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env.prod.local",
+      "env": {
+        "API_BASE_URL": "http://localhost:3022",
+        "SITE_URL": "http://localhost:3021"
+      }
+    },
+    {
+      "name": "Momiz Web • API cloud PROD",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env.prod.local",
+      "env": {
+        "API_BASE_URL": "https://api.momiz.com.br",
+        "SITE_URL": "http://localhost:3021"
+      }
+    }
+  ]
+}
