@@ -25,6 +25,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Arquitetura e produto
 
+- Antes de criar qualquer componente visual ou fluxo, use `rg` para localizar componentes equivalentes e prefira reutilizar ou estender a implementação existente. Quando isso não for adequado, registre a justificativa objetiva no checkpoint.
 - Preserve os padrões existentes de Next.js, React e TypeScript.
 - A API é a autoridade para autenticação administrativa, autorização, planos e capacidades. Não duplique regras de negócio no cliente.
 - Trate estados de carregamento, vazio, erro e sucesso de forma explícita.
