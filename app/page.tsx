@@ -1,7 +1,13 @@
 import Image from "next/image";
+import { loadPublicAccessPlanCatalog } from "../lib/access-plan-catalog";
+import { API_BASE_URL } from "../lib/site-config";
+import { resolveAppStoreUrl, resolveGooglePlayUrl } from "../lib/store-links";
 
-const appStoreUrl = process.env.NEXT_PUBLIC_APP_STORE_URL;
-const playStoreUrl = process.env.NEXT_PUBLIC_GOOGLE_PLAY_URL;
+const planLabels = {
+  FREE: "Comece com o essencial",
+  STANDARD: "Mais liberdade no seu chá",
+  PRO: "Para viver muitos momentos",
+} as const;
 
 const features = [
   {
@@ -42,7 +48,11 @@ function StoreButton({ store, url }: { store: "Apple" | "Google"; url?: string }
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const catalog = await loadPublicAccessPlanCatalog({ apiBaseUrl: API_BASE_URL });
+  const appStoreUrl = resolveAppStoreUrl();
+  const playStoreUrl = resolveGooglePlayUrl();
+
   return (
     <>
       <section className="hero">
@@ -123,6 +133,66 @@ export default function Home() {
               <div><h3>{feature.title}</h3><p>{feature.text}</p></div>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="section plans" id="planos" aria-labelledby="plans-title">
+        <div className="section-heading plans-heading">
+          <span className="eyebrow">Um plano para cada momento</span>
+          <h2 id="plans-title">Comece do seu jeito.<br />Cresça quando precisar.</h2>
+          <p>Os recursos e limites abaixo vêm do catálogo oficial do Momiz.</p>
+        </div>
+        <div className="plan-grid">
+          {catalog.plans.map((plan) => {
+            const featured = plan.packageCode === "STANDARD";
+            return (
+              <article className={`plan-card${featured ? " featured" : ""}`} key={plan.packageCode}>
+                {featured && <span className="plan-ribbon">Escolha equilibrada</span>}
+                <span className="plan-kicker">{planLabels[plan.packageCode]}</span>
+                <h3>{plan.name}</h3>
+                <p>{plan.description}</p>
+                <div className="plan-limit">
+                  <strong>{plan.limits["event.active_limit"] === 1 ? "1 chá ativo" : `Até ${plan.limits["event.active_limit"]} chás ativos`}</strong>
+                  <span>{plan.packageCode === "STANDARD" ? "Libera mais recursos dentro do chá atual" : plan.packageCode === "PRO" ? "Crie e organize novos chás" : "Organize seu primeiro chá"}</span>
+                </div>
+                <ul aria-label={`Recursos do plano ${plan.name}`}>
+                  {[...plan.highlights, ...plan.features
+                    .filter((feature) => !feature.capability.startsWith("care."))
+                    .map((feature) => feature.label)]
+                    .filter((item, index, items) => items.indexOf(item) === index)
+                    .slice(0, 7)
+                    .map((item) => <li key={item}><span aria-hidden="true">✓</span>{item}</li>)}
+                </ul>
+                <a href="#baixar" className={featured ? "button primary plan-action" : "button secondary plan-action"}>
+                  Começar com {plan.name}
+                </a>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="section coming-soon" id="em-breve" aria-labelledby="coming-soon-title">
+        <div className="coming-soon-intro">
+          <span className="eyebrow">O Momiz continua crescendo</span>
+          <h2 id="coming-soon-title">Novos capítulos<br />estão a caminho.</h2>
+          <p>Estamos preparando experiências para acompanhar a família além do chá, com privacidade e cuidado desde o começo.</p>
+        </div>
+        <div className="coming-soon-grid">
+          <article>
+            <span className="soon-label">Em breve</span>
+            <div className="soon-icon" aria-hidden="true">✦</div>
+            <h3>Equipe de cuidado por perto</h3>
+            <p>Convide profissionais autorizados, organize agenda e acompanhe documentos importantes em um espaço conectado à família.</p>
+            <small>Gestão de profissionais · autorizações · agenda e documentos</small>
+          </article>
+          <article>
+            <span className="soon-label">Em breve</span>
+            <div className="soon-icon coral" aria-hidden="true">♡</div>
+            <h3>Cada aniversário vira memória</h3>
+            <p>Planeje as festinhas, reúna fotos em álbuns e compartilhe momentos em uma comunidade privada de mães e famílias.</p>
+            <small>Festas de aniversário · álbuns · registros em família</small>
+          </article>
         </div>
       </section>
 

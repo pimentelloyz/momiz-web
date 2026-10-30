@@ -28,8 +28,12 @@ API fake local em `http://127.0.0.1:3022`. Os cenários de convite usam somente
 fixtures fictícias, sem acessar a API externa. No CI, o Chromium e suas
 dependências de sistema são instalados antes da suíte.
 
-As variáveis `NEXT_PUBLIC_APP_STORE_URL` e `NEXT_PUBLIC_GOOGLE_PLAY_URL` ativam
-os botões das lojas. Sem elas, os botões exibem “Em breve”.
+O Google Play usa por padrão o package oficial `com.lifeados.momiz.app` e pode
+ser sobrescrito com `NEXT_PUBLIC_GOOGLE_PLAY_URL`. A App Store exige o ID
+numérico atribuído pela Apple — o bundle `com.lifeados.momiz` não forma uma URL
+pública. Configure `NEXT_PUBLIC_APP_STORE_APP_ID` (9 a 12 dígitos) ou uma URL
+oficial em `NEXT_PUBLIC_APP_STORE_URL`; enquanto nenhum deles existir, o botão
+iOS permanece como “Em breve”.
 
 `SITE_URL` define a URL canônica do site, `API_BASE_URL` define a API usada pela
 página pública de convite e `SUPPORT_EMAIL` define o canal exibido nas páginas

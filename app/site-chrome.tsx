@@ -20,6 +20,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
         <nav aria-label="Navegação principal">
           <Link href="/#como-funciona">Como funciona</Link>
           <Link href="/#recursos">Recursos</Link>
+          <Link href="/#planos">Planos</Link>
           <Link href="/#baixar" className="nav-cta">Baixar o app</Link>
         </nav>
       </header>
