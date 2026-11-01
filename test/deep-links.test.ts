@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildEventDeepLink,
   buildInviteDeepLink,
+  buildInviteUniversalLink,
   normalizeEventId,
 } from "../lib/deep-links.ts";
 
@@ -12,6 +13,13 @@ test("normalizeEventId accepts and normalizes a UUID", () => {
   assert.equal(
     normalizeEventId(`  ${eventId.toUpperCase()}  `),
     eventId,
+  );
+});
+
+test("buildInviteUniversalLink keeps the canonical HTTPS route", () => {
+  assert.equal(
+    buildInviteUniversalLink("cha-da-agatha", "guest + 1"),
+    "/convite/cha-da-agatha?guest=guest%20%2B%201",
   );
 });
 

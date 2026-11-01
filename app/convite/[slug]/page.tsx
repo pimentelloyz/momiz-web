@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { buildInviteDeepLink } from "../../../lib/deep-links";
+import { buildInviteUniversalLink } from "../../../lib/deep-links";
 import type { EventDetailsLoadResult } from "../../../lib/event-details-loader";
 import { getEventDetails } from "../../../lib/event-details-server";
 import { firstValue, formatEventDate, safeColor } from "../../../lib/invite-helpers";
+import { resolveAppStoreUrl, resolveGooglePlayUrl } from "../../../lib/store-links";
+import { SITE_URL } from "../../../lib/site-config";
+import { InviteAppActions } from "./invite-app-actions";
 
 type InvitePageProps = {
   params: Promise<{ slug: string }>;
@@ -62,7 +65,7 @@ export default async function InvitePage({ params, searchParams }: InvitePagePro
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const guest = firstValue(query.guest);
   const result = await getEventDetails(slug, guest);
-  const deepLink = buildInviteDeepLink(slug, guest);
+  const universalLink = `${SITE_URL}${buildInviteUniversalLink(slug, guest)}`;
 
   if (!result.ok) return <InviteError result={result} />;
 
@@ -127,8 +130,13 @@ export default async function InvitePage({ params, searchParams }: InvitePagePro
         <div className="invite-actions">
           <p><strong>Como você quer participar?</strong></p>
           <p>Você pode ir ao chá ou participar de longe e escolher um presente pelo Momiz.</p>
-          <a className="button primary" href={deepLink}>Abrir no Momiz e escolher</a>
-          <Link className="button secondary" href="/#baixar">Ainda não tenho o app</Link>
+          <InviteAppActions
+            slug={slug}
+            guest={guest}
+            universalLink={universalLink}
+            appStoreUrl={resolveAppStoreUrl()}
+            playStoreUrl={resolveGooglePlayUrl()}
+          />
         </div>
         <p className="invite-action-note">
           No app, sua resposta ajuda a família a planejar o evento com números reais. Quem participa de longe não entra na contagem de alimentação e lembrancinhas.

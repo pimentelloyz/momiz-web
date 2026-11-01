@@ -15,3 +15,8 @@ export function buildInviteDeepLink(slug: string, guest?: string) {
   const query = guest ? `?guest=${encodeURIComponent(guest)}` : "";
   return `momiz://convite/${encodeURIComponent(slug)}${query}`;
 }
+
+export function buildInviteUniversalLink(slug: string, guest?: string) {
+  const query = guest ? `?guest=${encodeURIComponent(guest)}` : "";
+  return `/convite/${encodeURIComponent(slug)}${query}`;
+}

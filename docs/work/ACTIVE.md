@@ -1,15 +1,15 @@
 # Trabalho ativo — Web
 
-- Status: pronto para a próxima tarefa
+- Status: pronto para próxima tarefa
 - Atualizado em: 2026-11-01
 - Identificador: nenhum
-- Objetivo: aguardando definição.
-- Escopo: a definir.
-- Fora de escopo: a definir.
-- Critérios de aceite: a definir.
-- Verificações: concluído em `docs/work/completed/2026-11-01-host-delivery-capability-web.md`.
-- Dependências de API/app: API deve publicar a capability e seu label no catálogo canônico.
-- Próximo passo: aguardar integração do coordenador.
+- Objetivo: aguardando próximo pacote.
+- Escopo: nenhum.
+- Fora de escopo: nenhum.
+- Critérios de aceite: n/a.
+- Verificações: n/a.
+- Dependências de API/app: handoff do convite concluído na web; integração final depende da API e do app.
+- Próximo passo: coordenador validar integração ponta a ponta.
 
 ```markdown
 - Status:

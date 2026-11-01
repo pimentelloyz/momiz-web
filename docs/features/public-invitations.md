@@ -8,19 +8,23 @@
 - suporte ao identificador opcional do convidado sem expô-lo em documentação ou logs;
 - diferenciação entre erro transitório e convite inexistente;
 - metadados Open Graph derivados do evento;
-- CTA para abrir o convite no aplicativo e alternativa para download;
+- CTA HTTPS para abrir o convite no aplicativo e instalação com retomada first-party;
 - fallback privado por UUID de evento, sem renderizar detalhes sensíveis no navegador.
 
 ## Rotas web
 
 - `GET /convite/[slug]`: convite renderizado no servidor.
 - `GET /events/[eventId]`: fallback `noindex` que encaminha ao aplicativo.
+- `POST /api/deep-link-handoffs`: proxy server-side que valida a entrada e devolve somente o token opaco da API.
 
 ## Contratos consumidos
 
 - `GET /api/events/by-slug/{slug}/details` com query opcional de convidado, chamado por `lib/event-details-loader.ts`.
 - o contrato é normalizado em `lib/event-details.ts`; endereço redigido é apresentado como parcial.
-- deep links são construídos e validados em `lib/deep-links.ts`.
+- links canônicos são construídos em `lib/deep-links.ts`; URLs de instalação e tokens são validados em `lib/deferred-deep-link.ts`.
+- Android recebe somente `momiz_ddl_v1=<token>` no `referrer` da Play Store; slug e convidado não são enviados à loja.
+- iOS copia o link opaco de retomada apenas após gesto explícito e mantém instrução/código manual quando o clipboard falha.
+- falha no handoff não bloqueia nem remove o convite público.
 
 ## Perfis e limitações
 
@@ -37,11 +41,15 @@
 - `lib/event-details.ts`
 - `lib/invite-helpers.ts`
 - `lib/deep-links.ts`
+- `lib/deferred-deep-link.ts`
+- `app/api/deep-link-handoffs/route.ts`
+- `app/convite/[slug]/invite-app-actions.tsx`
 
 ## Testes e validação
 
 - `test/event-details-loader.test.ts`
 - `test/invite-helpers.test.ts`
 - `test/deep-links.test.ts`
+- `test/deferred-deep-link.test.ts`
 - `npm test`
 
