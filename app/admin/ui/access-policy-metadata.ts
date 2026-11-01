@@ -91,6 +91,12 @@ export const capabilityMetadata: Record<
     description: "Libera conferência de comprovantes e valores.",
     group: "Premium",
   },
+  "gift.host_delivery": {
+    label: "Entrega no endereço do anfitrião",
+    description:
+      "Permite cadastrar um endereço privado para convidados enviarem presentes comprados fora do Momiz.",
+    group: "Presentes",
+  },
   "planning.checklist": {
     label: "Checklist",
     description: "Libera o planejamento por tarefas.",

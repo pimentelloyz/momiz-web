@@ -14,6 +14,7 @@
 - visualização da policy publicada e histórico;
 - criação, retomada, salvamento e descarte de rascunho;
 - edição de capabilities booleanas e limites numéricos;
+- metadata legível para `gift.host_delivery`, mantendo a API como autoridade da disponibilidade em Standard e Pro;
 - validação, diff e prévia de impacto antes da publicação;
 - publicação com controle otimista da versão atual;
 - clonagem de versão anterior para rollback seguro;
@@ -37,6 +38,7 @@
 - publicação depende de autorização, consistência e versão da API.
 - preços e assinaturas das lojas não são administrados por este painel (`EXTERNAL_VALIDATION_REQUIRED`).
 - a matriz na web não é autoridade; a API aplica a decisão final.
+- a landing usa o label publicado por `GET /api/billing/plans`; não mantém uma regra local específica para entrega ao anfitrião.
 
 ## Evidências
 
