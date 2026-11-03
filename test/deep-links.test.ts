@@ -1,11 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildCareInviteDeepLink,
   buildEventDeepLink,
   buildInviteDeepLink,
   buildInviteUniversalLink,
   normalizeEventId,
 } from "../lib/deep-links.ts";
+
+test("buildCareInviteDeepLink keeps the token opaque and URL-safe", () => {
+  assert.equal(
+    buildCareInviteDeepLink(" invite.token~value "),
+    "momiz://care/invite/invite.token~value",
+  );
+  assert.equal(buildCareInviteDeepLink("   "), null);
+});
 
 const eventId = "550e8400-e29b-41d4-a716-446655440000";
 

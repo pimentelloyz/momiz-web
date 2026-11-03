@@ -20,3 +20,10 @@ export function buildInviteUniversalLink(slug: string, guest?: string) {
   const query = guest ? `?guest=${encodeURIComponent(guest)}` : "";
   return `/convite/${encodeURIComponent(slug)}${query}`;
 }
+
+export function buildCareInviteDeepLink(token: string) {
+  const normalized = token.trim();
+  return normalized
+    ? `momiz://care/invite/${encodeURIComponent(normalized)}`
+    : null;
+}

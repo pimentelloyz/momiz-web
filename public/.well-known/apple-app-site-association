@@ -9,7 +9,8 @@
         ],
         "components": [
           { "/": "/convite/*", "comment": "Convites públicos do Momiz" },
-          { "/": "/events/*", "comment": "Eventos e listas de presentes" }
+          { "/": "/events/*", "comment": "Eventos e listas de presentes" },
+          { "/": "/care/invite/*", "comment": "Convites profissionais do Momiz" }
         ]
       }
     ]
