@@ -2,6 +2,8 @@
 
 Este diretório traduz o roadmap central para as superfícies web do Momiz. Ele não substitui os contratos da API nem autoriza desenvolvimento.
 
+> Estado auditado em 2026-11-02: MT-01 a MT-09 possuem implementação web concreta atrás de flags, mas continuam parciais até integração com API, dados e gates centrais. Consulte `../../../omah-api/docs/medical-team-roadmap/IMPLEMENTATION_STATUS_2026-11-02.md`; as matrizes históricas locais podem estar defasadas.
+
 ## Fontes e precedência
 
 Leia, nesta ordem:
@@ -50,4 +52,4 @@ DTO, enum ou endpoint não deve ser inventado no cliente. Ampliações do proxy 
 
 ## Estado atual
 
-As treze features estão especificadas para web, mas continuam sujeitas aos gates centrais. O primeiro pacote técnico permanece MT-01; MT-10 é transversal e encerra o piloto somente após evidências clínicas, jurídicas, de segurança e operação.
+MT-01 a MT-09 estão materializados no portal profissional/BFF em diferentes graus e permanecem desligados por padrão. MT-10 é transversal e só encerra o piloto após evidências clínicas, jurídicas, de segurança e operação. Implementação cliente não equivale a homologação integrada.
