@@ -11,7 +11,7 @@ export const SITE_URL = (process.env.SITE_URL || defaultSiteUrl).replace(/\/+$/,
 export const API_BASE_URL = (process.env.API_BASE_URL || defaultApiBaseUrl).replace(/\/+$/, "");
 
 export const siteConfig = {
-  supportEmail: process.env.SUPPORT_EMAIL || "suporte@momiz.com.br",
+  supportEmail: process.env.SUPPORT_EMAIL || "momiz.app@gmail.com",
   description:
     "Organize seu chá, acompanhe participações presenciais e de longe e compartilhe presentes com Pix ou entrega física.",
 } as const;

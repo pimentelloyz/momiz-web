@@ -1,6 +1,7 @@
 export const LEGAL_LINKS = [
   { href: "/suporte", label: "Central de suporte", shortLabel: "Suporte" },
   { href: "/termos", label: "Termos de uso", shortLabel: "Termos" },
+  { href: "/health-professional-terms", label: "Termos para profissionais de saúde", shortLabel: "Profissionais de saúde" },
   { href: "/privacidade", label: "Privacidade", shortLabel: "Privacidade" },
   { href: "/excluir-conta", label: "Excluir conta", shortLabel: "Excluir conta" },
 ] as const;
