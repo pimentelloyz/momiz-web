@@ -55,15 +55,26 @@ if (!/\n    get:\n/.test(`\n${operation}\n`) || !operation.includes("operationId
 const requiredMatch = operation.match(/required: \[([^\]]+)\]/);
 const propertiesBlock = operation.match(/properties:\n([\s\S]+)$/)?.[1] ?? "";
 const required = requiredMatch?.[1].split(",").map((value) => value.trim()).filter(Boolean) ?? [];
-const properties = [...propertiesBlock.matchAll(/^\s{18}(\w+): \{ type: (\w+)(?:, format: (\w+))?[^}]*\}/gm)]
-  .map((match) => ({ name: match[1], type: match[2], format: match[3] ?? null }));
+const propertyEntries = [...propertiesBlock.matchAll(/^\s{18}(\w+):(?:\s*\{([^}]*)\})?\s*$/gm)];
+const properties = propertyEntries.map((match, index) => {
+  const start = match.index ?? 0;
+  const end = propertyEntries[index + 1]?.index ?? propertiesBlock.length;
+  const definition = `${match[2] ?? ""}\n${propertiesBlock.slice(start + match[0].length, end)}`;
+  const type = definition.match(/\btype:\s*(\w+)/)?.[1] ?? null;
+  const format = definition.match(/\bformat:\s*(\w+)/)?.[1] ?? null;
+  const enumValues = definition.match(/\benum:\s*\[([^\]]+)\]/)?.[1]
+    .split(",").map((value) => value.trim()).filter(Boolean) ?? [];
+  return { name: match[1], type, format, enumValues, deprecated: /\bdeprecated:\s*true\b/.test(definition) };
+});
 
-if (required.length === 0 || properties.length === 0 || required.some((name) => !properties.some((property) => property.name === name))) {
+if (required.length === 0 || properties.length === 0 || properties.some((property) => !property.type) || required.some((name) => !properties.some((property) => property.name === name))) {
   console.error("Schema de resposta 200 não pôde ser derivado com segurança.");
   process.exit(1);
 }
 
-const tsType = (property) => property.type === "string" ? "string" : "unknown";
+const tsType = (property) => property.enumValues.length > 0
+  ? property.enumValues.map((value) => JSON.stringify(value)).join(" | ")
+  : property.type === "string" ? "string" : "unknown";
 const validations = `  const payload = input as Record<string, unknown>;\n${properties.map((property) => {
   const presence = required.includes(property.name)
     ? `typeof payload.${property.name} !== "${property.type}"`
@@ -71,9 +82,12 @@ const validations = `  const payload = input as Record<string, unknown>;\n${prop
   const format = property.format === "uri"
     ? ` || (typeof payload.${property.name} === "string" && !isHttpUrl(payload.${property.name}))`
     : "";
-  return `  if (${presence}${format}) issues.push("${property.name}");`;
+  const enumCheck = property.enumValues.length > 0
+    ? ` || (typeof payload.${property.name} === "string" && !${JSON.stringify(property.enumValues)}.includes(payload.${property.name}))`
+    : "";
+  return `  if (${presence}${format}${enumCheck}) issues.push("${property.name}");`;
 }).join("\n")}`;
-const fields = properties.map((property) => `  ${property.name}${required.includes(property.name) ? "" : "?"}: ${tsType(property)};`).join("\n");
+const fields = properties.map((property) => `${property.deprecated ? "  /** @deprecated Alias legado; use acceptanceId. */\n" : ""}  ${property.name}${required.includes(property.name) ? "" : "?"}: ${tsType(property)};`).join("\n");
 const values = properties.map((property) => `      ${property.name}: payload.${property.name} as ${tsType(property)},`).join("\n");
 
 const generated = `// GENERATED FILE — DO NOT EDIT. Run npm run openapi:generate.\n// Source: ${manifest.artifactName}; contract ${manifest.contractVersion}; sha256 ${manifest.sha256}\n\nexport const GET_CURRENT_PROFESSIONAL_TERMS_CONTRACT = {\n  operationId: "getCurrentProfessionalTerms",\n  method: "GET",\n  path: "/care/professional/terms",\n  sourceSha: "${manifest.sourceSha}",\n  sourceChecksum: "${manifest.sha256}",\n} as const;\n\nexport type GetCurrentProfessionalTermsResponse = {\n${fields}\n};\n\nexport type GetCurrentProfessionalTermsParseResult =\n  | { ok: true; value: GetCurrentProfessionalTermsResponse }\n  | { ok: false; error: { code: "INVALID_RESPONSE"; issues: string[] } };\n\nfunction isHttpUrl(value: string): boolean {\n  try {\n    const url = new URL(value);\n    return url.protocol === "https:" || url.protocol === "http:";\n  } catch {\n    return false;\n  }\n}\n\nexport function parseGetCurrentProfessionalTermsResponse(input: unknown): GetCurrentProfessionalTermsParseResult {\n  if (typeof input !== "object" || input === null || Array.isArray(input)) {\n    return { ok: false, error: { code: "INVALID_RESPONSE", issues: ["response"] } };\n  }\n  const issues: string[] = [];\n${validations}\n  if (issues.length > 0) return { ok: false, error: { code: "INVALID_RESPONSE", issues } };\n  return {\n    ok: true,\n    value: {\n${values}\n    },\n  };\n}\n`;

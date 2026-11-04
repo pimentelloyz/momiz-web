@@ -13,6 +13,7 @@ import {
 
 test("professional terms expose one canonical current version and an auditable archive", () => {
   assert.equal(HEALTH_PROFESSIONAL_TERMS.version, "1.0");
+  assert.equal(HEALTH_PROFESSIONAL_TERMS.acceptanceId, "professional-terms-v1");
   assert.equal(HEALTH_PROFESSIONAL_TERMS.effectiveDate, "2026-11-04");
   assert.match(HEALTH_PROFESSIONAL_TERMS.canonicalUrl, /^https:\/\/momiz\.com\.br\//);
   assert.match(HEALTH_PROFESSIONAL_TERMS.archiveUrl, /\/legal\/health-professional-terms\/1\.0$/);
@@ -21,6 +22,8 @@ test("professional terms expose one canonical current version and an auditable a
 
   const manifest = legalDocumentsManifest();
   assert.equal(manifest.documents[0].currentVersion, HEALTH_PROFESSIONAL_TERMS.version);
+  assert.equal(manifest.documents[0].acceptanceId, HEALTH_PROFESSIONAL_TERMS.acceptanceId);
+  assert.equal(manifest.documents[0].documentVersion, HEALTH_PROFESSIONAL_TERMS.version);
   assert.equal(manifest.documents[0].canonicalUrl, HEALTH_PROFESSIONAL_TERMS.canonicalUrl);
   assert.equal(manifest.documents[0].versions.length, LEGAL_DOCUMENT_HISTORY.length);
 });

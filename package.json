@@ -16,8 +16,10 @@
     "test:e2e:check": "node scripts/check-playwright-browsers.mjs",
     "test:e2e:release": "playwright test --config=playwright.release.config.ts",
     "test:e2e:install": "playwright install chromium webkit",
-    "openapi:generate": "node scripts/generate-professional-terms-contract.mjs --artifact-dir contracts/openapi/momiz-openapi-cf9ca805c5c621b46af82898bd1d99fa1b1ae8ab",
-    "openapi:check": "node scripts/generate-professional-terms-contract.mjs --check --artifact-dir contracts/openapi/momiz-openapi-cf9ca805c5c621b46af82898bd1d99fa1b1ae8ab"
+    "openapi:generate": "node scripts/generate-professional-terms-contract.mjs --artifact-dir contracts/openapi/momiz-openapi-d91c5e6422617516458c00ee70a39c2babb72692",
+    "openapi:check": "node scripts/generate-professional-terms-contract.mjs --check --artifact-dir contracts/openapi/momiz-openapi-d91c5e6422617516458c00ee70a39c2babb72692",
+    "operations:validate": "node scripts/validate-runbooks.mjs",
+    "operations:game-day": "node scripts/runbook-game-day.mjs"
   },
   "dependencies": {
     "@firebase/app": "0.14.5",

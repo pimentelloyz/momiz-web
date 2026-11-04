@@ -112,10 +112,10 @@ Resultados: lint, typecheck, 55/55 testes unitários e build passaram; audit de 
 #### WEB-007 — Contratos API gerados e infraestrutura BFF comum
 
 - **Prioridade:** P1; **estado:** parcial — primeira capability gerada em 04/11/2026; migração dos demais contratos/BFFs permanece pendente.
-- **Evidência:** `GET /care/professional/terms` agora deriva tipo e parser do artifact fixado `momiz-openapi-cf9ca805c5c621b46af82898bd1d99fa1b1ae8ab`. O gerador mínimo valida SHA-256/source SHA, grava metadata na saída e a CI executa o stale gate. O BFF `/api/legal/professional-terms` usa path/parser gerados e falha fechado em resposta inválida ou divergência com o manifest Web. DTOs/parsers restantes e allowlists em `lib/professional/*` continuam manuais; não houve migração em massa.
+- **Evidência:** `GET /care/professional/terms` deriva tipo e parser do artifact fixado `momiz-openapi-d91c5e6422617516458c00ee70a39c2babb72692`. O gerador valida SHA-256/source SHA, propriedades inline/multiline, enum/depreciação e a CI executa o stale gate. O BFF `/api/legal/professional-terms` usa path/parser gerados e compara `acceptanceId` técnico, `documentVersion` editorial, path, URL e status jurídico; alias `version` existe apenas como fallback legado. DTOs/parsers restantes continuam manuais.
 - **Risco:** drift de enum/path/status, tratamento divergente de erros e custo elevado para cada endpoint.
 - **Proposta:** consumir artefato OpenAPI versionado da API, gerar tipos/clientes, adicionar contract tests e criar factory BFF com allowlist explícita, limites, correlação, headers e erro canônico.
-- **Dependências:** API manter/publicar `momiz-openapi-<sha>` e política de compatibilidade; reconciliar tecnicamente a versão API `professional-terms-v1` com a versão legal Web `1.0` após decisão do responsável jurídico/produto.
+- **Dependências:** API manter/publicar `momiz-openapi-<sha>` e política de compatibilidade; consumidores restantes devem migrar do alias `version` para `acceptanceId`.
 - **Aceite/validação:** breaking change falha na CI; nenhum `any`; todos os BFFs preservam status, erro/requestId permitidos e headers seguros.
 - **Validação da fatia:** geração repetida produz bytes idênticos; checksum e stale gate bloqueiam drift; testes cobrem sucesso, payload inválido, erro upstream e mismatch, sem copiar payload sensível.
 
@@ -140,6 +140,7 @@ Resultados: lint, typecheck, 55/55 testes unitários e build passaram; audit de 
 
 - **Prioridade:** P1; **estado:** parcial — governança técnica local entregue em 04/11/2026; adequação/aprovação jurídica e adoção multi-repo pendentes.
 - **Evidência:** termos profissionais são texto estático versão 1.0 (`app/health-professional-terms/page.tsx:5,91-100`); termos/privacidade gerais também residem em componentes. O próprio checkpoint anterior registra revisão jurídica pendente.
+- **Identidades estabilizadas:** o manifest público distingue `acceptanceId: professional-terms-v1` (aceite técnico) de `documentVersion: 1.0` (edição jurídica), preserva `PENDING_LEGAL_REVIEW` e mantém `currentVersion` somente por compatibilidade. O teste contratual compara cada campo com seu equivalente da API sem tradução silenciosa.
 - **Risco:** texto e versão aceitos no App/API divergirem, ou publicação ocorrer sem aprovação/arquivo histórico.
 - **Proposta:** revisão jurídica LGPD/saúde, identificador imutável comum entre Web/API/App, histórico público, data de vigência, owner/aprovação e teste que compara versão/link esperado.
 - **Dependências:** API persiste versão/aceite; App abre URL e envia exatamente a versão vigente.
@@ -190,10 +191,11 @@ Resultados: lint, typecheck, 55/55 testes unitários e build passaram; audit de 
 
 #### WEB-016 — Runbooks e ownership operacional
 
-- **Prioridade:** P2; **estado:** ausência confirmada.
-- **Evidência:** CI e Vercel estão configurados, mas não há no repositório runbook de deploy, rollback, env, incidentes de login/deep link, SLO ou owners por superfície.
+- **Prioridade:** P2; **estado:** parcial — baseline local verificável entregue em 04/11/2026; aprovação organizacional e exercício remoto pendentes.
+- **Evidência:** `docs/operations/` agora cobre ownership RACI por papéis, metas SLO/RPO/RTO explicitamente propostas, ack/escalonamento, login, release/config/rollback, termos, deep links e coleta segura de requestId. `npm run operations:validate` verifica documentos, seções, links e comandos; `npm run operations:game-day` gera evidência local sem rede/mutação, incluindo tabletop de rollback, preflight, manifests e stale gate.
 - **Proposta:** runbooks curtos, checklist de release, RACI, restauração de env, rotação de credenciais e incidente de dados.
 - **Aceite:** exercício trimestral; uma pessoa sem contexto consegue diagnosticar e reverter seguindo o documento.
+- **Pendências para conclusão:** confirmar owners/canais/escala e metas; observar ack real; executar game day autorizado em Preview e rollback controlado; ligar probes/alertas antes de tratar SLO como medido.
 
 ## 4. Sequenciamento sugerido
 

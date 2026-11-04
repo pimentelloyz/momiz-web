@@ -10,17 +10,34 @@ export type ProfessionalTermsCompatibility =
   | { status: "INVALID_RESPONSE"; terms: GetCurrentProfessionalTermsParseResult & { ok: false } }
   | { status: "MISMATCH"; terms: GetCurrentProfessionalTermsParseResult & { ok: true } };
 
+function withLegacyAcceptanceIdFallback(input: unknown): unknown {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) return input;
+  const payload = input as Record<string, unknown>;
+  if (payload.acceptanceId !== undefined || typeof payload.version !== "string") return input;
+  return { ...payload, acceptanceId: payload.version };
+}
+
 export function assessProfessionalTermsCompatibility(input: unknown): ProfessionalTermsCompatibility {
-  const terms = parseGetCurrentProfessionalTermsResponse(input);
+  const terms = parseGetCurrentProfessionalTermsResponse(withLegacyAcceptanceIdFallback(input));
   if (!terms.ok) return { status: "INVALID_RESPONSE", terms };
 
-  const matches = terms.value.version === HEALTH_PROFESSIONAL_TERMS.version &&
-    terms.value.url === HEALTH_PROFESSIONAL_TERMS.canonicalUrl;
+  const matches = terms.value.acceptanceId === HEALTH_PROFESSIONAL_TERMS.acceptanceId &&
+    terms.value.version === terms.value.acceptanceId &&
+    terms.value.documentVersion === HEALTH_PROFESSIONAL_TERMS.version &&
+    terms.value.path === HEALTH_PROFESSIONAL_TERMS.path &&
+    terms.value.url === HEALTH_PROFESSIONAL_TERMS.canonicalUrl &&
+    terms.value.legalReviewStatus === HEALTH_PROFESSIONAL_TERMS.approvalStatus;
   return { status: matches ? "MATCH" : "MISMATCH", terms };
 }
 
 export type ProfessionalTermsLoadResult =
-  | { status: "MATCH"; value: { version: string; url: string } }
+  | { status: "MATCH"; value: {
+    acceptanceId: string;
+    documentVersion: string;
+    path: string;
+    url: string;
+    legalReviewStatus: string;
+  } }
   | { status: "MISMATCH" | "INVALID_RESPONSE" | "UPSTREAM_ERROR" };
 
 export async function loadProfessionalTerms(
@@ -36,7 +53,8 @@ export async function loadProfessionalTerms(
 
     const compatibility = assessProfessionalTermsCompatibility(await response.json());
     if (compatibility.status !== "MATCH") return { status: compatibility.status };
-    return { status: "MATCH", value: compatibility.terms.value };
+    const { acceptanceId, documentVersion, path, url, legalReviewStatus } = compatibility.terms.value;
+    return { status: "MATCH", value: { acceptanceId, documentVersion, path, url, legalReviewStatus } };
   } catch {
     return { status: "UPSTREAM_ERROR" };
   }

@@ -1,5 +1,8 @@
 # Gate de release, smoke e rollback
 
+Owners, metas e escalonamento estão no [índice operacional](README.md). Em
+incidente, registre ack e tempos conforme [resposta a incidentes](incident-response.md).
+
 ## Objetivo
 
 O workflow **Web Release Gate** valida um deployment já criado antes de sua
@@ -68,6 +71,25 @@ pós-deploy falhar:
 6. se o login continuar indisponível, trate configuração Vercel/Firebase como
    incidente e não faça novas promoções até reconciliar os ambientes;
 7. documente causa, duração, versão restaurada e ações posteriores.
+
+Antes da ação, a coordenação de release deve registrar quem autorizou, SHA
+afetado, SHA anterior validado e relatório que comprova esse estado. O operador
+Web executa; o accountable não deve ser inferido de quem possui acesso técnico.
+
+## Restauração de configuração
+
+Configuração não deve ser “corrigida” por tentativa durante rollback. Se a
+causa for env/Firebase:
+
+1. preserve apenas nomes das variáveis ausentes/inválidas e o resultado do
+   preflight; nunca copie valores;
+2. compare no cofre/plataforma autorizada com o conjunto da última release
+   validada, por operador habilitado;
+3. restaure a versão aprovada da configuração e gere novo deployment associado
+   ao SHA registrado — não reutilize build com configuração ambígua;
+4. execute preflight, smoke público e autenticado; ausência de conta sintética
+   em Production mantém o gate falho;
+5. registre autorizador, horários e resultado, sem incluir secrets.
 
 O rollback da Web não deve apagar dados, alterar contratos da API ou reverter
 configuração do App. Um ensaio real de Preview e um rollback controlado ainda

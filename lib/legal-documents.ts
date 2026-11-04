@@ -1,5 +1,6 @@
 export const HEALTH_PROFESSIONAL_TERMS = {
   id: "health-professional-terms",
+  acceptanceId: "professional-terms-v1",
   version: "1.0",
   effectiveDate: "2026-11-04",
   effectiveDateLabel: "4 de novembro de 2026",
@@ -19,6 +20,8 @@ export function legalDocumentsManifest() {
     schemaVersion: LEGAL_MANIFEST_VERSION,
     documents: [{
       id: HEALTH_PROFESSIONAL_TERMS.id,
+      acceptanceId: HEALTH_PROFESSIONAL_TERMS.acceptanceId,
+      documentVersion: HEALTH_PROFESSIONAL_TERMS.version,
       currentVersion: HEALTH_PROFESSIONAL_TERMS.version,
       canonicalUrl: HEALTH_PROFESSIONAL_TERMS.canonicalUrl,
       approvalStatus: HEALTH_PROFESSIONAL_TERMS.approvalStatus,

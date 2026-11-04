@@ -21,6 +21,8 @@ jobs:
       - run: npm ci
       - name: Validate pinned OpenAPI artifact and generated contract
         run: npm run openapi:check
+      - name: Validate operational runbooks
+        run: npm run operations:validate
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test

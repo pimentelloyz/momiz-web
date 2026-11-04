@@ -17,9 +17,12 @@ npm run openapi:check
 editado manualmente. O check da CI recalcula o checksum do YAML e compara os
 bytes gerados, falhando se o artifact ou a saída estiverem stale.
 
-A comparação com o manifest legal Web é fail-closed: payload inválido e
-divergência de versão/URL são estados distintos. A aprovação jurídica e a
-decisão sobre qual versão deve vigorar continuam fora deste mecanismo técnico.
+A comparação com o manifest legal Web é fail-closed: `acceptanceId` identifica
+o aceite técnico imutável e `documentVersion` identifica a versão editorial.
+Path, URL e status jurídico também devem coincidir. O alias depreciado `version`
+é aceito somente como fallback de `acceptanceId` durante a transição e, quando
+ambos existem, valores diferentes são mismatch. A aprovação jurídica continua
+fora deste mecanismo técnico.
 O BFF público `/api/legal/professional-terms` usa o path e o parser gerados,
 responde apenas quando API e manifest Web coincidem e não replica o payload de
 erro do upstream.
