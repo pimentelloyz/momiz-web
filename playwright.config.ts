@@ -5,6 +5,7 @@ const mockApiUrl = "http://127.0.0.1:3022";
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: "release-auth.spec.ts",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
@@ -13,13 +14,21 @@ export default defineConfig({
   use: {
     baseURL: appUrl,
     screenshot: "off",
-    trace: "on-first-retry",
+    trace: "off",
     video: "off",
   },
   projects: [
     {
-      name: "chromium",
+      name: "desktop-chromium",
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "ipad-webkit",
+      use: { ...devices["iPad Pro 11"] },
+    },
+    {
+      name: "android-chromium",
+      use: { ...devices["Pixel 7"] },
     },
   ],
   webServer: [

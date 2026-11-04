@@ -30,6 +30,7 @@ body {
 }
 a { color: inherit; text-decoration: none; }
 img { display: block; max-width: 100%; }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid rgba(77, 105, 88, .55); outline-offset: 3px; }
 
 .portal-error-page { min-height: 100vh; padding: 24px; display: grid; place-items: center; background: var(--surface-muted); }
 .portal-error-card { width: min(620px, 100%); padding: clamp(28px, 6vw, 48px); border: 1px solid var(--line); border-radius: 26px; background: var(--surface); box-shadow: 0 24px 70px rgba(53, 75, 61, .12); }
@@ -354,6 +355,7 @@ img { display: block; max-width: 100%; }
 .legal-page { width: min(920px, calc(100% - 48px)); margin: 0 auto; padding: 72px 0 120px; }
 .back-link { display: inline-block; margin-bottom: 60px; color: var(--muted); font-size: 14px; font-weight: 700; }
 .legal-page h1 { font-size: clamp(48px, 6vw, 74px); }
+.legal-page h1 { overflow-wrap: anywhere; }
 .legal-version { color: var(--muted); }
 .legal-version a { color: var(--primary); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .legal-nav { margin: 34px 0 38px; padding: 10px; display: flex; gap: 8px; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 18px; background: rgba(255, 255, 255, .62); }

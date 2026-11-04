@@ -89,13 +89,15 @@ Resultados: lint, typecheck, 55/55 testes unitários e build passaram; audit de 
 
 #### WEB-005 — Testar os caminhos críticos e acessibilidade em matriz real
 
-- **Prioridade:** P1; **estado:** parcial — testes semânticos da fatia administrativa adicionados em 04/11/2026; matriz autenticada/browser permanece pendente; **natureza:** dívida estrutural de qualidade.
+- **Prioridade:** P1; **estado:** parcial — matriz pública desktop/iPad/Android preparada em 04/11/2026; autenticado real/assistive tech permanecem pendentes; **natureza:** dívida estrutural de qualidade.
 - **Evidência:** Playwright usa apenas `Desktop Chrome` (`playwright.config.ts:19-23`); não há E2E de admin, sessão, MFA, portal, documentos, agenda, chat ou revisão. O E2E local exige instalação manual do browser e falhou antes dos testes por essa pré-condição.
 - **Risco:** regressões móveis/iPad/Safari e falhas autenticadas chegam à produção; fluxos clínicos não têm proteção ponta a ponta.
 - **Proposta:** fixtures de autenticação/mock contratual, projetos Mobile Safari/iPad/Android, axe-core, navegação por teclado, zoom 200/400%, contraste e testes de estados loading/empty/error/denied/success.
 - **Dependências:** contratos/mocks da API; jornadas conjuntas com App para deep links.
 - **Aceite/validação:** suíte mínima cobre login, MFA, autorização, troca de contexto, revogação, documento e erro; zero violações críticas axe; execução local autocontida ou preflight instrutivo.
-- **Fatia entregue:** testes unitários renderizam as primitives de feedback e formulário, cobrindo live regions, alertas acionáveis, label, `aria-describedby` e `aria-invalid`. O painel extraído usa controles nativos de teclado e `aria-busy`. E2E autenticado, Safari/iPad/Android, zoom e axe continuam pendentes e impedem concluir WEB-005.
+- **Fatia entregue:** testes unitários renderizam as primitives de feedback e formulário, cobrindo live regions, alertas acionáveis, label, `aria-describedby` e `aria-invalid`. O painel extraído usa controles nativos de teclado e `aria-busy`. Jornadas autenticadas, dispositivos reais, zoom 400% e axe continuam pendentes e impedem concluir WEB-005.
+- **Matriz entregue:** `playwright.config.ts` define `desktop-chromium`, `ipad-webkit` e `android-chromium`; a CI instala Chromium/WebKit e o comando local possui preflight acionável. São 51 casos descobertos cobrindo jornadas públicas/isoladas, headers, manifests, login indisponível, teclado e zoom 200%, sempre com mock local e sem captura. A fixture autenticada lê apenas secrets explícitos e permanece separada da suíte pública. Documentação: `docs/testing/e2e-matrix.md`.
+- **Pendências:** executar a matriz nos browsers da CI/Preview, login/MFA/autorização/revogação/documento com conta sintética aprovada, axe ou alternativa aprovada, Safari/Android reais, leitores de tela, contraste e zoom 400%.
 
 ### Next — consolidar contratos, segurança e experiência
 
@@ -109,12 +111,13 @@ Resultados: lint, typecheck, 55/55 testes unitários e build passaram; audit de 
 
 #### WEB-007 — Contratos API gerados e infraestrutura BFF comum
 
-- **Prioridade:** P1; **estado:** confirmado.
-- **Evidência:** não há schema/OpenAPI gerado no repositório; DTOs/parsers e allowlists são manuais em `lib/professional/*` e rotas `app/{admin,profissional}/api/**`. Várias rotas repetem same-origin, forward, parse de erro, no-store e MFA.
+- **Prioridade:** P1; **estado:** parcial — primeira capability gerada em 04/11/2026; migração dos demais contratos/BFFs permanece pendente.
+- **Evidência:** `GET /care/professional/terms` agora deriva tipo e parser do artifact fixado `momiz-openapi-cf9ca805c5c621b46af82898bd1d99fa1b1ae8ab`. O gerador mínimo valida SHA-256/source SHA, grava metadata na saída e a CI executa o stale gate. O BFF `/api/legal/professional-terms` usa path/parser gerados e falha fechado em resposta inválida ou divergência com o manifest Web. DTOs/parsers restantes e allowlists em `lib/professional/*` continuam manuais; não houve migração em massa.
 - **Risco:** drift de enum/path/status, tratamento divergente de erros e custo elevado para cada endpoint.
 - **Proposta:** consumir artefato OpenAPI versionado da API, gerar tipos/clientes, adicionar contract tests e criar factory BFF com allowlist explícita, limites, correlação, headers e erro canônico.
-- **Dependências:** API publicar/validar OpenAPI e política de compatibilidade.
+- **Dependências:** API manter/publicar `momiz-openapi-<sha>` e política de compatibilidade; reconciliar tecnicamente a versão API `professional-terms-v1` com a versão legal Web `1.0` após decisão do responsável jurídico/produto.
 - **Aceite/validação:** breaking change falha na CI; nenhum `any`; todos os BFFs preservam status, erro/requestId permitidos e headers seguros.
+- **Validação da fatia:** geração repetida produz bytes idênticos; checksum e stale gate bloqueiam drift; testes cobrem sucesso, payload inválido, erro upstream e mismatch, sem copiar payload sensível.
 
 #### WEB-008 — Defesa em profundidade dos BFFs e sessão
 

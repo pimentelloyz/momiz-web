@@ -26,7 +26,17 @@ npm run test:e2e
 Os smoke tests E2E sobem o build de produção em `http://127.0.0.1:3021` e uma
 API fake local em `http://127.0.0.1:3022`. Os cenários de convite usam somente
 fixtures fictícias, sem acessar a API externa. No CI, o Chromium e suas
-dependências de sistema são instalados antes da suíte.
+dependências de sistema são instalados antes da suíte. A matriz cobre Chromium
+desktop, iPad/WebKit e Android/Chromium. `npm run test:e2e` valida primeiro se
+Chromium e WebKit estão instalados e, quando faltarem, aponta o comando explícito
+`npm run test:e2e:install`.
+
+A suíte local não executa login real, não usa PII e mantém screenshot, trace e
+vídeo desligados. O smoke autenticado de release usa uma configuração separada
+e lê conta sintética somente de secrets do ambiente; sem eles, não inventa
+credenciais nem grava estado autenticado. Testes semânticos e de teclado não
+dependem de `axe`; auditoria axe/leitor de tela continua uma etapa externa até
+que a adoção de uma dependência seja aprovada.
 
 O gate de Preview/Production é executado pelo workflow manual **Web Release
 Gate**. Ele valida a URL e o SHA candidatos, homepage, manifests de universal
