@@ -2,6 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { adminApi, jsonRequest } from "./admin-api-client";
+import {
+  PilotDraft,
+  PilotGate,
+  PilotReadiness,
+  PilotReadinessPanel,
+} from "./pilot-readiness-panel";
 import styles from "./admin.module.css";
 
 type VerificationStatus =
@@ -82,36 +88,6 @@ type CommunicationReport = {
   };
 };
 
-type PilotGateStatus = "PENDING" | "APPROVED" | "BLOCKED";
-type PilotGate = {
-  key: string;
-  label: string;
-  description: string;
-  status: PilotGateStatus;
-  reason: string | null;
-  evidenceReference: string | null;
-  decidedAt: string | null;
-  decidedBy: { id: string; name: string | null; email: string | null } | null;
-  auditLogs: Array<{
-    id: string;
-    previousStatus: PilotGateStatus;
-    resultingStatus: PilotGateStatus;
-    reason: string;
-    evidenceReference: string | null;
-    createdAt: string;
-    actor: { id: string; name: string | null; email: string | null } | null;
-  }>;
-};
-
-type PilotReadiness = {
-  ready: boolean;
-  advisoryOnly: true;
-  rolloutAutomaticallyEnabled: false;
-  approvedCount: number;
-  requiredCount: number;
-  gates: PilotGate[];
-};
-
 const statusLabels: Record<VerificationStatus, string> = {
   DRAFT: "Rascunho",
   PENDING_VERIFICATION: "Aguardando análise",
@@ -184,11 +160,7 @@ export function ProfessionalCareReviewPanel({
   const [resolutionNote, setResolutionNote] = useState("");
   const [resolvingReport, setResolvingReport] = useState(false);
   const [pilotReadiness, setPilotReadiness] = useState<PilotReadiness | null>(null);
-  const [pilotDrafts, setPilotDrafts] = useState<Record<string, {
-    status: PilotGateStatus;
-    reason: string;
-    evidenceReference: string;
-  }>>({});
+  const [pilotDrafts, setPilotDrafts] = useState<Record<string, PilotDraft>>({});
   const [savingPilotGate, setSavingPilotGate] = useState<string | null>(null);
 
   const selected = useMemo(
@@ -517,87 +489,14 @@ export function ProfessionalCareReviewPanel({
 
   return (
     <div className={styles.careReviewPanel}>
-      <section className={styles.sectionCard}>
-        <div className={styles.sectionTitle}>
-          <div>
-            <span className={styles.kicker}>Gate operacional</span>
-            <h2>Prontidão do piloto profissional</h2>
-            <p>Registre decisões e evidências externas antes de iniciar o piloto controlado.</p>
-          </div>
-          {pilotReadiness && (
-            <div className={styles.readinessTools}>
-              <span className={pilotReadiness.ready ? styles.readinessReady : styles.readinessBlocked}>
-                {pilotReadiness.ready ? "Pronto para decisão" : `${pilotReadiness.approvedCount}/${pilotReadiness.requiredCount} aprovados`}
-              </span>
-              <button className={styles.secondaryButton} disabled={!pilotReadiness.gates.some((gate) => gate.auditLogs.length > 0)} onClick={exportPilotAudit}>
-                Exportar histórico CSV
-              </button>
-            </div>
-          )}
-        </div>
-        <div className={styles.readinessNotice}>
-          <strong>{pilotReadiness?.ready ? "Todos os gates foram aprovados" : "O piloto permanece bloqueado"}</strong>
-          <span>Este checklist é consultivo: ele não publica, não altera permissões e não ativa rollout automaticamente.</span>
-        </div>
-        {!pilotReadiness ? <p>Carregando prontidão…</p> : (
-          <div className={styles.pilotGateGrid}>
-            {pilotReadiness.gates.map((gate) => {
-              const draft = pilotDrafts[gate.key] ?? {
-                status: gate.status,
-                reason: gate.reason ?? "",
-                evidenceReference: gate.evidenceReference ?? "",
-              };
-              return (
-                <article key={gate.key} className={styles.pilotGateCard}>
-                  <div className={styles.pilotGateHeader}>
-                    <div><h3>{gate.label}</h3><p>{gate.description}</p></div>
-                    <span data-status={gate.status}>{gate.status === "APPROVED" ? "Aprovado" : gate.status === "BLOCKED" ? "Bloqueado" : "Pendente"}</span>
-                  </div>
-                  <label>
-                    Decisão
-                    <select value={draft.status} onChange={(event) => updatePilotDraft(gate.key, "status", event.target.value)}>
-                      <option value="PENDING">Pendente</option>
-                      <option value="APPROVED">Aprovado</option>
-                      <option value="BLOCKED">Bloqueado</option>
-                    </select>
-                  </label>
-                  <label>
-                    Justificativa
-                    <textarea rows={3} maxLength={2000} value={draft.reason} onChange={(event) => updatePilotDraft(gate.key, "reason", event.target.value)} placeholder="Decisão, pendência ou risco identificado" />
-                  </label>
-                  <label>
-                    Referência da evidência {draft.status === "APPROVED" ? "(obrigatória)" : "(opcional)"}
-                    <input maxLength={1000} value={draft.evidenceReference} onChange={(event) => updatePilotDraft(gate.key, "evidenceReference", event.target.value)} placeholder="Ticket, parecer, relatório ou URL interna" />
-                  </label>
-                  {gate.decidedAt && <small>Última decisão em {formatDate(gate.decidedAt)} por {gate.decidedBy?.name || gate.decidedBy?.email || "administrador removido"}.</small>}
-                  <button className={styles.secondaryButton} disabled={savingPilotGate === gate.key} onClick={() => void savePilotGate(gate)}>
-                    {savingPilotGate === gate.key ? "Registrando…" : "Registrar decisão"}
-                  </button>
-                  <details className={styles.pilotGateHistory}>
-                    <summary>Histórico auditável ({gate.auditLogs.length})</summary>
-                    {gate.auditLogs.length === 0 ? (
-                      <p>Nenhuma decisão registrada para este gate.</p>
-                    ) : (
-                      <ol>
-                        {gate.auditLogs.map((log) => (
-                          <li key={log.id}>
-                            <div>
-                              <strong>{log.previousStatus} → {log.resultingStatus}</strong>
-                              <time dateTime={log.createdAt}>{formatDate(log.createdAt)}</time>
-                            </div>
-                            <p>{log.reason}</p>
-                            <small>{log.evidenceReference ? `Evidência: ${log.evidenceReference}` : "Sem referência de evidência"} · {log.actor?.name || log.actor?.email || "Administrador removido"}</small>
-                          </li>
-                        ))}
-                      </ol>
-                    )}
-                  </details>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
+      <PilotReadinessPanel
+        readiness={pilotReadiness}
+        drafts={pilotDrafts}
+        savingGate={savingPilotGate}
+        onDraftChange={updatePilotDraft}
+        onSave={(gate) => void savePilotGate(gate)}
+        onExport={exportPilotAudit}
+      />
       <section className={styles.sectionCard}>
         <div className={styles.sectionTitle}>
           <div>

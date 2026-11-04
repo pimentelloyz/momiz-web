@@ -87,12 +87,13 @@ Resultados: lint, typecheck, 55/55 testes unitários e build passaram; audit de 
 
 #### WEB-005 — Testar os caminhos críticos e acessibilidade em matriz real
 
-- **Prioridade:** P1; **estado:** confirmado; **natureza:** dívida estrutural de qualidade.
+- **Prioridade:** P1; **estado:** parcial — testes semânticos da fatia administrativa adicionados em 04/11/2026; matriz autenticada/browser permanece pendente; **natureza:** dívida estrutural de qualidade.
 - **Evidência:** Playwright usa apenas `Desktop Chrome` (`playwright.config.ts:19-23`); não há E2E de admin, sessão, MFA, portal, documentos, agenda, chat ou revisão. O E2E local exige instalação manual do browser e falhou antes dos testes por essa pré-condição.
 - **Risco:** regressões móveis/iPad/Safari e falhas autenticadas chegam à produção; fluxos clínicos não têm proteção ponta a ponta.
 - **Proposta:** fixtures de autenticação/mock contratual, projetos Mobile Safari/iPad/Android, axe-core, navegação por teclado, zoom 200/400%, contraste e testes de estados loading/empty/error/denied/success.
 - **Dependências:** contratos/mocks da API; jornadas conjuntas com App para deep links.
 - **Aceite/validação:** suíte mínima cobre login, MFA, autorização, troca de contexto, revogação, documento e erro; zero violações críticas axe; execução local autocontida ou preflight instrutivo.
+- **Fatia entregue:** testes unitários renderizam as primitives de feedback e formulário, cobrindo live regions, alertas acionáveis, label, `aria-describedby` e `aria-invalid`. O painel extraído usa controles nativos de teclado e `aria-busy`. E2E autenticado, Safari/iPad/Android, zoom e axe continuam pendentes e impedem concluir WEB-005.
 
 ### Next — consolidar contratos, segurança e experiência
 
@@ -123,11 +124,12 @@ Resultados: lint, typecheck, 55/55 testes unitários e build passaram; audit de 
 
 #### WEB-009 — Sistema visual e acessibilidade dos portais
 
-- **Prioridade:** P2; **estado:** confirmado em estrutura; defeitos específicos requerem auditoria assistiva.
+- **Prioridade:** P2; **estado:** parcial — primitives de feedback/form aplicadas à prontidão do piloto em 04/11/2026; auditoria ampla pendente.
 - **Evidência:** existem 62 controles de formulário e somente 37 ocorrências do padrão simples label+controle; há foco customizado parcial, responsividade e `prefers-reduced-motion` no site público, mas os três CSS somam cerca de 2.644 linhas. Formulários complexos e painéis são densos e implementados individualmente.
 - **Risco:** inconsistência de foco/erro/teclado, regressões mobile e alto custo para manter o padrão premium.
 - **Proposta:** biblioteca interna de Field, Select/combobox, DateTime, Dialog/BottomSheet web responsivo, Feedback, EmptyState, DataTable e Button; tokens compartilhados; auditoria WCAG 2.2 AA com leitores de tela.
 - **Aceite/validação:** componentes têm documentação e testes; foco não se perde; mensagens usam `aria-describedby/live`; touch targets e contraste aprovados; 320 px e iPad sem overflow.
+- **Fatia entregue:** `admin-primitives.ts` adiciona `FeedbackState` e `FormField`; `PilotReadinessPanel` aplica loading/empty/success persistentes, erros de campo associados e controles nativos. O layout reutiliza CSS/tokens e o breakpoint de uma coluna existente. Dialog/bottom sheet não foi criado sem necessidade real. Contraste, leitores de tela, touch targets e matriz de viewport ainda requerem validação assistida.
 
 #### WEB-010 — Governança jurídica e versionamento de consentimento
 
@@ -140,11 +142,12 @@ Resultados: lint, typecheck, 55/55 testes unitários e build passaram; audit de 
 
 #### WEB-011 — Decompor módulos monolíticos e CSS
 
-- **Prioridade:** P2; **estado:** confirmado.
+- **Prioridade:** P2; **estado:** parcial — primeira extração concluída em 04/11/2026.
 - **Evidência:** `professional-care-review-panel.tsx` tem ~818 linhas, `admin-dashboard.tsx` ~666, `access-package-policy-panel.tsx` ~477; `admin.module.css` ~1.147 e `professional.module.css` ~955 linhas.
 - **Risco:** conflitos, regressões cruzadas, renderizações desnecessárias e baixa testabilidade.
 - **Proposta:** separar por domínio/use case, hooks de dados, adapters e componentes apresentacionais; extrair primitives/tokens sem big-bang.
 - **Aceite/validação:** limites de tamanho/complexidade acordados; testes por módulo; bundle e interações não pioram.
+- **Fatia entregue:** a prontidão do piloto foi movida para `pilot-readiness-panel.tsx`, com tipos e apresentação próprios; o painel principal caiu de 818 para 717 linhas e preservou fetching, sessão e mutações. Responsabilidades e próximos limites estão em `docs/features/admin-care-review-ui.md`. Denúncias, credenciais, dashboard e CSS monolítico permanecem para fatias posteriores.
 
 #### WEB-012 — Semântica de cache adequada ao serverless e dados sensíveis
 

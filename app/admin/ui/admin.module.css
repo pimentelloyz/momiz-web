@@ -993,12 +993,21 @@
   color: #8a2f2a;
   background: #f4d9d6;
 }
-.pilotGateCard label {
+.adminFormField {
   display: grid;
   gap: 6px;
   color: #354b3d;
   font-size: 12px;
   font-weight: 800;
+}
+.adminFormField > small {
+  color: #626d65;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.adminFormField > small[role="alert"] {
+  color: #8f2f28;
+  font-weight: 700;
 }
 .pilotGateCard select,
 .pilotGateCard input,
