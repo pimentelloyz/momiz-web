@@ -1,0 +1,69 @@
+name: Web Release Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_url:
+        description: HTTPS URL exata do deployment candidato
+        required: true
+        type: string
+      deployment_environment:
+        description: Ambiente que será promovido ou validado
+        required: true
+        type: choice
+        options: [preview, production]
+      expected_sha:
+        description: SHA do commit associado ao deployment
+        required: true
+        type: string
+      require_authenticated_smoke:
+        description: Exigir conta sintética (sempre exigida em Production)
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  release-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ inputs.deployment_environment }}
+    env:
+      SMOKE_BASE_URL: ${{ inputs.deployment_url }}
+      SMOKE_ENVIRONMENT: ${{ inputs.deployment_environment }}
+      SMOKE_EXPECTED_SHA: ${{ inputs.expected_sha }}
+      SMOKE_REPORT_PATH: artifacts/release-smoke-report.json
+      SMOKE_BYPASS_TOKEN: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expected_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Validate release inputs
+        run: npm run release:preflight
+      - name: Smoke public surfaces and authentication configuration
+        run: npm run smoke:remote
+      - name: Install release smoke browser
+        run: npx playwright install --with-deps chromium
+      - name: Authenticated synthetic smoke
+        run: npm run test:e2e:release
+        env:
+          SMOKE_REQUIRE_AUTH: ${{ inputs.require_authenticated_smoke || inputs.deployment_environment == 'production' }}
+          SMOKE_AUTH_SURFACE: profissional
+          SMOKE_AUTH_EMAIL: ${{ secrets.MOMIZ_SMOKE_AUTH_EMAIL }}
+          SMOKE_AUTH_PASSWORD: ${{ secrets.MOMIZ_SMOKE_AUTH_PASSWORD }}
+      - name: Publish smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-smoke-${{ inputs.deployment_environment }}-${{ inputs.expected_sha }}
+          path: |
+            artifacts/release-smoke-report.json
+          if-no-files-found: warn
+          retention-days: 14

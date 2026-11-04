@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import { assertFirebaseClientConfigForPromotion } from "./lib/firebase-client-config";
+
+assertFirebaseClientConfigForPromotion(process.env);
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,

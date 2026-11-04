@@ -20,6 +20,7 @@ const legalPages = [
   ["/privacidade", "Política de privacidade"],
   ["/suporte", "Central de suporte"],
   ["/excluir-conta", "Excluir conta e dados"],
+  ["/health-professional-terms", "Termos de uso para profissionais de saúde"],
 ] as const;
 
 for (const [path, heading] of legalPages) {
@@ -29,6 +30,19 @@ for (const [path, heading] of legalPages) {
     await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
   });
 }
+
+test("manifests de associação mobile preservam os identificadores oficiais", async ({ request }) => {
+  const apple = await request.get("/.well-known/apple-app-site-association");
+  expect(apple.ok()).toBeTruthy();
+  const appleManifest = await apple.json();
+  expect(JSON.stringify(appleManifest)).toContain("2B3NAR3YX7.com.lifeados.momiz");
+  expect(JSON.stringify(appleManifest)).toContain("/care/invite/*");
+
+  const android = await request.get("/.well-known/assetlinks.json");
+  expect(android.ok()).toBeTruthy();
+  const androidManifest = await android.json();
+  expect(JSON.stringify(androidManifest)).toContain("com.lifeados.momiz.app");
+});
 
 test("convite público usa a API local e expõe o deep link", async ({ page }) => {
   await page.goto("/convite/smoke?guest=guest-smoke");
@@ -80,9 +94,21 @@ test("portal profissional apresenta login isolado do site público", async ({ pa
 
   await expect(page.getByRole("heading", { level: 1, name: "Acesso profissional" })).toBeVisible();
   await expect(page.getByText(/Consulte pacientes e compromissos autorizados/)).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText("Login temporariamente indisponível");
+  await expect(page.getByRole("link", { name: "Acessar a Central de suporte" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Entrar" })).toHaveCount(0);
   await expect(page.locator("header.site-header")).toHaveCount(0);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
     "content",
     /noindex.*nofollow|nofollow.*noindex/,
   );
+});
+
+test("painel administrativo explica autenticação indisponível", async ({ page }) => {
+  await page.goto("/admin/login");
+
+  await expect(page.getByRole("heading", { level: 1, name: "Acesso administrativo" })).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText("Login temporariamente indisponível");
+  await expect(page.getByRole("link", { name: "Acessar a Central de suporte" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Entrar" })).toHaveCount(0);
 });

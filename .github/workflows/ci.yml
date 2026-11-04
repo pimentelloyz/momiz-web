@@ -22,6 +22,8 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - name: Validate release gate scripts
+        run: SMOKE_BASE_URL=http://127.0.0.1:3021 SMOKE_ENVIRONMENT=preview SMOKE_EXPECTED_SHA="$GITHUB_SHA" npm run release:preflight
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

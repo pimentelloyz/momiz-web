@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { hasProfessionalSession } from "../../../lib/professional/professional-session";
+import { resolveFirebaseClientConfig } from "../../../lib/firebase-client-config";
 import { ProfessionalLoginForm } from "../ui/professional-login-form";
 import styles from "../ui/professional.module.css";
 
@@ -18,15 +19,7 @@ export default async function ProfessionalLoginPage({
 }) {
   const returnTo = safeReturnTo((await searchParams).returnTo);
   if (await hasProfessionalSession()) redirect(returnTo);
-  const apiKey = process.env.FIREBASE_WEB_API_KEY;
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const firebaseConfig = apiKey && projectId
-    ? {
-        apiKey,
-        projectId,
-        authDomain: process.env.FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`,
-      }
-    : null;
+  const firebase = resolveFirebaseClientConfig(process.env);
 
   return (
     <div className={styles.loginPage}>
@@ -42,7 +35,7 @@ export default async function ProfessionalLoginPage({
         <span className={styles.kicker}>Portal de cuidado</span>
         <h1>Acesso profissional</h1>
         <p>Consulte pacientes e compromissos autorizados por cada paciente.</p>
-        <ProfessionalLoginForm firebaseConfig={firebaseConfig} returnTo={returnTo} />
+        <ProfessionalLoginForm firebaseConfig={firebase.available ? firebase.config : null} returnTo={returnTo} />
       </section>
     </div>
   );

@@ -14,9 +14,9 @@ import {
   TotpMultiFactorGenerator,
 } from "@firebase/auth";
 import { useRouter } from "next/navigation";
+import type { FirebaseClientConfig } from "../../../lib/firebase-client-config";
 import styles from "./professional.module.css";
 
-type FirebaseClientConfig = { apiKey: string; projectId: string; authDomain: string };
 type Props = { firebaseConfig: FirebaseClientConfig | null; returnTo?: string };
 type LoginMethod = "password" | "google";
 
@@ -169,9 +169,19 @@ export function ProfessionalLoginForm({ firebaseConfig, returnTo = "/profissiona
     );
   }
 
+  if (!firebaseConfig) {
+    return (
+      <div className={styles.authUnavailable} role="alert">
+        <strong>Login temporariamente indisponível</strong>
+        <p>Não foi possível iniciar a autenticação neste momento. Tente novamente mais tarde ou acesse o suporte.</p>
+        <a href="/suporte">Acessar a Central de suporte</a>
+      </div>
+    );
+  }
+
   return (
     <form className={styles.form} onSubmit={submit}>
-      <button className={styles.googleButton} disabled={loading !== null || !firebaseConfig} onClick={signInWithGoogle} type="button">
+      <button className={styles.googleButton} disabled={loading !== null} onClick={signInWithGoogle} type="button">
         <svg aria-hidden="true" viewBox="0 0 24 24">
           <path fill="#4285f4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.8 3-4.3 3-7.3Z" />
           <path fill="#34a853" d="M12 22c2.7 0 5-.9 6.6-2.5L15.4 17c-.9.6-2 1-3.4 1a5.8 5.8 0 0 1-5.5-4H3.2v2.6A10 10 0 0 0 12 22Z" />
@@ -184,7 +194,7 @@ export function ProfessionalLoginForm({ firebaseConfig, returnTo = "/profissiona
       <label>E-mail<input name="email" type="email" autoComplete="username" required /></label>
       <label>Senha<input name="password" type="password" autoComplete="current-password" required /></label>
       {error && <p className={styles.error} role="alert">{error}</p>}
-      <button className={styles.primaryButton} disabled={loading !== null || !firebaseConfig}>
+      <button className={styles.primaryButton} disabled={loading !== null}>
         {loading === "password" ? "Validando…" : "Entrar"}
       </button>
     </form>

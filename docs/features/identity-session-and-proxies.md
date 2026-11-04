@@ -44,6 +44,13 @@ As allowlists contêm rotas defensivas adicionais. A documentação funcional do
 - `API_BASE_URL`: origem da API no servidor.
 - `FIREBASE_WEB_API_KEY`: login por senha no BFF administrativo.
 - configuração pública Firebase usada pelos formulários de login para provedores/MFA.
+- `FIREBASE_PROJECT_ID` e `FIREBASE_AUTH_DOMAIN`: identidade e domínio do cliente Firebase.
+- `MOMIZ_AUTH_CONFIG_REQUIRED=true`: ativa o gate de promoção fora da Vercel; Preview e Production Vercel já ativam o gate automaticamente.
+
+`npm run auth:preflight` valida a configuração obrigatória sem imprimir valores.
+Configuração ausente ou inválida bloqueia builds de promoção. Desenvolvimento,
+testes e builds locais sem o gate continuam possíveis para que a UI de
+indisponibilidade seja verificável.
 
 ## Evidências
 

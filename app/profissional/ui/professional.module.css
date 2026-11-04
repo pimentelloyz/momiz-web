@@ -179,6 +179,18 @@
   color: #58685e;
   font-size: 14px;
 }
+.authUnavailable {
+  margin-top: 28px;
+  padding: 18px;
+  display: grid;
+  gap: 8px;
+  color: #63342f;
+  border: 1px solid #e7b8b4;
+  border-radius: 14px;
+  background: #fff5f3;
+}
+.authUnavailable p { margin: 0; }
+.authUnavailable a { color: #4d6958; font-size: 13px; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
 
 .error {
   margin: 0;

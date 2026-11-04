@@ -14,13 +14,8 @@ import {
   TotpMultiFactorGenerator,
 } from "@firebase/auth";
 import { useRouter } from "next/navigation";
+import type { FirebaseClientConfig } from "../../../lib/firebase-client-config";
 import styles from "./admin.module.css";
-
-type FirebaseClientConfig = {
-  apiKey: string;
-  projectId: string;
-  authDomain: string;
-};
 
 type Props = {
   firebaseConfig: FirebaseClientConfig | null;
@@ -215,11 +210,21 @@ export function AdminLoginForm({ firebaseConfig }: Props) {
     );
   }
 
+  if (!firebaseConfig) {
+    return (
+      <div className={styles.authUnavailable} role="alert">
+        <strong>Login temporariamente indisponível</strong>
+        <p>Não foi possível iniciar a autenticação neste momento. Tente novamente mais tarde ou acesse o suporte.</p>
+        <a href="/suporte">Acessar a Central de suporte</a>
+      </div>
+    );
+  }
+
   return (
     <form className={styles.form} onSubmit={submit}>
       <button
         className={styles.googleButton}
-        disabled={loading !== null || !firebaseConfig}
+        disabled={loading !== null}
         onClick={signInWithGoogle}
         type="button"
       >
@@ -235,7 +240,7 @@ export function AdminLoginForm({ firebaseConfig }: Props) {
       <label>E-mail<input name="email" type="email" autoComplete="username" required /></label>
       <label>Senha<input name="password" type="password" autoComplete="current-password" required /></label>
       {error && <p className={styles.error} role="alert">{error}</p>}
-      <button className={styles.primaryButton} disabled={loading !== null || !firebaseConfig}>{loading === "password" ? "Validando…" : "Entrar"}</button>
+      <button className={styles.primaryButton} disabled={loading !== null}>{loading === "password" ? "Validando…" : "Entrar"}</button>
     </form>
   );
 }

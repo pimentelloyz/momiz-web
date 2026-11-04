@@ -8,8 +8,8 @@
 - Fora de escopo: nenhum.
 - Critérios de aceite: n/a.
 - Verificações: n/a.
-- Dependências de API/app: `/health-professional-terms` concluída na Web; o App deve abrir a URL pública e o conteúdo requer revisão jurídica antes da publicação. Fallback e associação iOS de `/care/invite/*` concluídos na Web; integração final depende do App tratar o link.
-- Próximo passo: coordenador revisar o conteúdo jurídico e validar a integração da WebView.
+- Dependências de API/app: WEB-002 preparado localmente; conclusão depende de conta sintética/secrets, execução em Preview e Production e ensaio autorizado de rollback. Chromium continua ausente localmente, mas é instalado nos workflows antes do E2E.
+- Próximo passo: coordenador configurar as dependências externas autorizadas e executar o runbook `docs/operations/release-gate.md` sem marcar WEB-002 como concluído antes das evidências reais.
 
 ```markdown
 - Status:

@@ -7,5 +7,6 @@ out/
 *.tsbuildinfo
 playwright-report/
 test-results/
+artifacts/
 .DS_Store
 .vercel

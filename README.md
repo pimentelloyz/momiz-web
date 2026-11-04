@@ -28,6 +28,12 @@ API fake local em `http://127.0.0.1:3022`. Os cenários de convite usam somente
 fixtures fictícias, sem acessar a API externa. No CI, o Chromium e suas
 dependências de sistema são instalados antes da suíte.
 
+O gate de Preview/Production é executado pelo workflow manual **Web Release
+Gate**. Ele valida a URL e o SHA candidatos, homepage, manifests de universal
+links, termos e disponibilidade dos dois logins. O relatório JSON registra URL,
+SHA e identificadores de requisição retornados pelo deployment. Consulte
+`docs/operations/release-gate.md` para promoção, conta sintética e rollback.
+
 O Google Play usa por padrão o package oficial `com.lifeados.momiz.app` e pode
 ser sobrescrito com `NEXT_PUBLIC_GOOGLE_PLAY_URL`. A App Store exige o ID
 numérico atribuído pela Apple — o bundle `com.lifeados.momiz` não forma uma URL
@@ -44,6 +50,15 @@ O painel administrativo usa `FIREBASE_WEB_API_KEY`, `FIREBASE_PROJECT_ID` e
 `FIREBASE_AUTH_DOMAIN` para autenticação por senha e Google. O Firebase apenas
 prova a identidade; a allowlist da API continua sendo a autoridade que concede
 acesso administrativo.
+
+As três variáveis Firebase são obrigatórias nos builds Vercel de Preview e
+Production. O build é interrompido quando alguma estiver ausente ou tiver formato
+inválido. Para executar a mesma verificação antes de uma promoção em outro
+ambiente, use `npm run auth:preflight` ou defina
+`MOMIZ_AUTH_CONFIG_REQUIRED=true` durante o build. O preflight informa somente
+os nomes dos campos problemáticos e nunca seus valores. Em desenvolvimento e
+testes locais sem Firebase, as páginas continuam disponíveis e apresentam um
+estado explícito de indisponibilidade do login.
 
 ### MT-01 no localhost
 

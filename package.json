@@ -9,7 +9,11 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.ts",
+    "auth:preflight": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-firebase-config.mjs",
+    "release:preflight": "node scripts/release-preflight.mjs",
+    "smoke:remote": "node scripts/remote-release-smoke.mjs",
     "test:e2e": "npx playwright test",
+    "test:e2e:release": "playwright test --config=playwright.release.config.ts",
     "test:e2e:install": "playwright install chromium"
   },
   "dependencies": {
