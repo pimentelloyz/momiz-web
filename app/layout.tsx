@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     images: ["/brand/momiz-og.png"],
   },
-  alternates: { canonical: "/" },
+  alternates: { canonical: "/", types: { "application/json": "/legal/manifest.json" } },
 };
 
 export const viewport: Viewport = {

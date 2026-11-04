@@ -78,12 +78,14 @@ Resultados: lint, typecheck, 55/55 testes unitários e build passaram; audit de 
 
 #### WEB-004 — Observabilidade e recuperação de falhas
 
-- **Prioridade:** P1; **estado:** confirmado; **natureza:** dívida estrutural.
+- **Prioridade:** P1; **estado:** parcial — boundaries e correlação local entregues em 04/11/2026; observabilidade/SLO remotos pendentes; **natureza:** dívida estrutural.
 - **Evidência:** não existem `app/error.tsx`, `app/global-error.tsx`, `loading.tsx` ou instrumentação; a única emissão server-side localizada é `console.error` em `lib/event-details-server.ts:12-20`. Request IDs aparecem em vários corpos, mas os BFFs nem sempre preservam headers de correlação; por exemplo, `app/admin/api/access/[...path]/route.ts:78-81` repassa só `content-type`.
 - **Risco:** telas brancas/erros genéricos, diagnóstico lento, ausência de SLO e correlação quebrada entre navegador, Vercel e API.
 - **Proposta:** error boundaries por superfície, páginas 404/5xx coerentes, logging estruturado e sanitizado, tracing/erro client-server, Web Vitals, SLOs de login/BFF/deep link e preservação padronizada de `x-request-id`.
 - **Dependências:** convenção canônica de erros/requestId da API; fornecedor de observabilidade aprovado pela privacidade.
 - **Aceite/validação:** falhas sintéticas geram UI recuperável e evento correlacionável; nenhum dado clínico/token é enviado; dashboards e alertas possuem owner/runbook.
+- **Fatia entregue:** `app/admin/error.tsx` e `app/profissional/error.tsx` oferecem retry/suporte sem mensagem, stack ou digest; loadings usam live region. `lib/request-correlation.ts` allowlista IDs opacos e os BFFs de sessão/access/care/contexto/pacientes tocados preservam `x-request-id` seguro sem copiar headers internos ou payload. Testes rejeitam PII/control characters e comprovam ausência de dados sensíveis nos headers. Runbook: `docs/operations/error-recovery-correlation.md`.
+- **Pendências:** smoke autenticado de falha/retry/cópia; correlação ponta a ponta com API; error boundary global público; fornecedor aprovado; logs estruturados, Web Vitals, SLOs, dashboards, alertas e ownership.
 
 #### WEB-005 — Testar os caminhos críticos e acessibilidade em matriz real
 
@@ -133,12 +135,14 @@ Resultados: lint, typecheck, 55/55 testes unitários e build passaram; audit de 
 
 #### WEB-010 — Governança jurídica e versionamento de consentimento
 
-- **Prioridade:** P1; **estado:** conteúdo confirmado, adequação jurídica pendente.
+- **Prioridade:** P1; **estado:** parcial — governança técnica local entregue em 04/11/2026; adequação/aprovação jurídica e adoção multi-repo pendentes.
 - **Evidência:** termos profissionais são texto estático versão 1.0 (`app/health-professional-terms/page.tsx:5,91-100`); termos/privacidade gerais também residem em componentes. O próprio checkpoint anterior registra revisão jurídica pendente.
 - **Risco:** texto e versão aceitos no App/API divergirem, ou publicação ocorrer sem aprovação/arquivo histórico.
 - **Proposta:** revisão jurídica LGPD/saúde, identificador imutável comum entre Web/API/App, histórico público, data de vigência, owner/aprovação e teste que compara versão/link esperado.
 - **Dependências:** API persiste versão/aceite; App abre URL e envia exatamente a versão vigente.
 - **Aceite/validação:** parecer/aprovação registrada; versão única nos três projetos; versões antigas auditáveis; mudança material força novo aceite.
+- **Fatia entregue:** `lib/legal-documents.ts` centraliza ID, versão 1.0, data ISO, canonical, arquivo permanente e status explícito `PENDING_LEGAL_REVIEW`; página e metadata exibem versão/link; `/legal/manifest.json` oferece contrato público e `/legal/health-professional-terms/1.0` mantém a rota auditável. Testes comparam manifest/constante e unicidade do histórico. Processo: `docs/legal/health-professional-terms-governance.md`.
+- **Pendências:** parecer jurídico, owner/aprovação registrada, snapshot realmente publicado, adoção da constante/manifest na API e no App, persistência do aceite e teste ponta a ponta. Nenhuma aprovação foi inferida.
 
 #### WEB-011 — Decompor módulos monolíticos e CSS
 

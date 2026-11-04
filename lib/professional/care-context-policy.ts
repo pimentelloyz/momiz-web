@@ -1,3 +1,5 @@
+import { safeRequestId } from "../request-correlation.ts";
+
 const uuidSource = "[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
 const uuidPattern = new RegExp(`^${uuidSource}$`, "i");
 
@@ -144,14 +146,16 @@ export function contextualCareHeaders(profileId: string, pregnancyId: string, re
   const headers = new Headers();
   headers.set("x-momiz-profile-id", profileId);
   headers.set("x-momiz-pregnancy-id", pregnancyId);
-  if (requestId && requestId.length <= 128) headers.set("x-request-id", requestId);
+  const safe = safeRequestId(requestId);
+  if (safe) headers.set("x-request-id", safe);
   return headers;
 }
 
 export function professionalProfileHeaders(profileId: string, requestId?: string | null) {
   const headers = new Headers();
   headers.set("x-momiz-profile-id", profileId);
-  if (requestId && requestId.length <= 128) headers.set("x-request-id", requestId);
+  const safe = safeRequestId(requestId);
+  if (safe) headers.set("x-request-id", safe);
   return headers;
 }
 

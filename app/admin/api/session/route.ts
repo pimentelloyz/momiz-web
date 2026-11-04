@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { adminApiFetch, clearAdminSession, saveAdminSession } from "../../../../lib/admin/admin-session";
 import { API_BASE_URL } from "../../../../lib/site-config";
+import { correlatedResponseHeaders, requestCorrelationHeaders } from "../../../../lib/request-correlation";
 
 type FirebaseSignIn = { idToken?: string; error?: { message?: string } };
 type ExchangeResponse = { accessToken?: string; refreshToken?: string };
@@ -16,6 +17,7 @@ function sameOrigin(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const incomingRequestId = request.headers.get("x-request-id");
   if (!sameOrigin(request)) return Response.json({ message: "Origem inválida." }, { status: 403 });
 
   const body = (await request.json().catch(() => null)) as SessionRequest | null;
@@ -44,15 +46,20 @@ export async function POST(request: NextRequest) {
     idToken = firebase.idToken;
   }
 
+  const exchangeHeaders = requestCorrelationHeaders(incomingRequestId);
+  exchangeHeaders.set("content-type", "application/json");
   const exchangeResponse = await fetch(`${API_BASE_URL}/api/auth/firebase/exchange`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: exchangeHeaders,
     body: JSON.stringify({ idToken }),
     cache: "no-store",
   });
   const exchange = (await exchangeResponse.json().catch(() => ({}))) as ExchangeResponse;
   if (!exchangeResponse.ok || !exchange.accessToken || !exchange.refreshToken) {
-    return Response.json({ message: "Não foi possível iniciar a sessão administrativa." }, { status: 401 });
+    return Response.json(
+      { message: "Não foi possível iniciar a sessão administrativa." },
+      { status: 401, headers: correlatedResponseHeaders(exchangeResponse, incomingRequestId) },
+    );
   }
 
   await saveAdminSession({ accessToken: exchange.accessToken, refreshToken: exchange.refreshToken });
@@ -76,15 +83,15 @@ export async function POST(request: NextRequest) {
           message:
             "Esta conta precisa ativar e confirmar o segundo fator antes de acessar o painel.",
         },
-        { status: 403 },
+        { status: 403, headers: correlatedResponseHeaders(authorization, incomingRequestId) },
       );
     }
     return Response.json(
       { message: authorization.status === 403 ? "Esta conta não possui acesso administrativo." : "Não foi possível validar o acesso." },
-      { status: authorization.status === 403 ? 403 : 401 },
+      { status: authorization.status === 403 ? 403 : 401, headers: correlatedResponseHeaders(authorization, incomingRequestId) },
     );
   }
-  return Response.json({ ok: true });
+  return Response.json({ ok: true }, { headers: correlatedResponseHeaders(authorization, incomingRequestId) });
 }
 
 export async function DELETE(request: NextRequest) {

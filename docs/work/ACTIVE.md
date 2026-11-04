@@ -8,8 +8,8 @@
 - Fora de escopo: nenhum.
 - Critérios de aceite: n/a.
 - Verificações: n/a.
-- Dependências de API/app: primeira fatia WEB-005/009/011 concluída; E2E autenticado, browsers/dispositivos, axe e auditoria assistiva continuam externos a esta fatia local.
-- Próximo passo: coordenador validar a UI autenticada em Preview e escolher uma próxima extração independente, sem big-bang.
+- Dependências de API/app: WEB-004/010 avançaram localmente; permanecem aprovação jurídica, adoção da versão pela API/App, smoke autenticado, correlação ponta a ponta e observabilidade/SLO remotos.
+- Próximo passo: coordenador validar manifest/arquivo com API/App e executar smoke de boundaries/correlação em Preview antes de concluir os itens.
 
 ```markdown
 - Status:

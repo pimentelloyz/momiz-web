@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { siteConfig } from "../../lib/site-config";
+import { HEALTH_PROFESSIONAL_TERMS } from "../../lib/legal-documents";
 import { LegalPage } from "../legal-page";
 
-const effectiveDate = "4 de novembro de 2026";
+const effectiveDate = HEALTH_PROFESSIONAL_TERMS.effectiveDateLabel;
 
 export const metadata: Metadata = {
   title: "Termos de uso para profissionais de saúde",
   description:
     "Condições para profissionais de saúde acessarem informações compartilhadas por pacientes no Momiz.",
-  alternates: { canonical: "/health-professional-terms" },
+  alternates: { canonical: HEALTH_PROFESSIONAL_TERMS.canonicalUrl },
 };
 
 export default function HealthProfessionalTermsPage() {
@@ -16,6 +17,8 @@ export default function HealthProfessionalTermsPage() {
     <LegalPage
       title="Termos de uso para profissionais de saúde"
       lastUpdated={effectiveDate}
+      documentVersion={HEALTH_PROFESSIONAL_TERMS.version}
+      permanentHref={HEALTH_PROFESSIONAL_TERMS.archivePath}
     >
       <div className="legal-summary">
         <strong>Cuidado com acesso responsável.</strong>

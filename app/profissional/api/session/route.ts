@@ -5,6 +5,7 @@ import {
   saveProfessionalSession,
 } from "../../../../lib/professional/professional-session";
 import { API_BASE_URL } from "../../../../lib/site-config";
+import { correlatedResponseHeaders, requestCorrelationHeaders } from "../../../../lib/request-correlation";
 
 type ExchangeResponse = { accessToken?: string; refreshToken?: string };
 type SessionRequest = { idToken?: string };
@@ -21,21 +22,27 @@ function errorCode(payload: unknown) {
 }
 
 export async function POST(request: NextRequest) {
+  const incomingRequestId = request.headers.get("x-request-id");
   if (!sameOrigin(request)) return Response.json({ message: "Origem inválida." }, { status: 403 });
 
   const body = (await request.json().catch(() => null)) as SessionRequest | null;
   const idToken = body?.idToken?.trim();
   if (!idToken) return Response.json({ message: "Autenticação Firebase obrigatória." }, { status: 400 });
 
+  const exchangeHeaders = requestCorrelationHeaders(incomingRequestId);
+  exchangeHeaders.set("content-type", "application/json");
   const exchangeResponse = await fetch(`${API_BASE_URL}/api/auth/firebase/exchange`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: exchangeHeaders,
     body: JSON.stringify({ idToken }),
     cache: "no-store",
   });
   const exchange = (await exchangeResponse.json().catch(() => ({}))) as ExchangeResponse;
   if (!exchangeResponse.ok || !exchange.accessToken || !exchange.refreshToken) {
-    return Response.json({ message: "Não foi possível iniciar a sessão profissional." }, { status: 401 });
+    return Response.json(
+      { message: "Não foi possível iniciar a sessão profissional." },
+      { status: 401, headers: correlatedResponseHeaders(exchangeResponse, incomingRequestId) },
+    );
   }
 
   await saveProfessionalSession({ accessToken: exchange.accessToken, refreshToken: exchange.refreshToken });
@@ -47,7 +54,7 @@ export async function POST(request: NextRequest) {
     if (errorCode(payload) === "MFA_REQUIRED") {
       return Response.json(
         { code: "MFA_REQUIRED", message: "Confirme o segundo fator para acessar o portal profissional." },
-        { status: 403 },
+        { status: 403, headers: correlatedResponseHeaders(authorization, incomingRequestId) },
       );
     }
     return Response.json(
@@ -57,10 +64,10 @@ export async function POST(request: NextRequest) {
           ? "Conclua seu cadastro profissional no aplicativo Momiz antes de acessar o portal."
           : "Não foi possível validar o acesso profissional.",
       },
-      { status: authorization.status === 403 || missingProfile ? 403 : 401 },
+      { status: authorization.status === 403 || missingProfile ? 403 : 401, headers: correlatedResponseHeaders(authorization, incomingRequestId) },
     );
   }
-  return Response.json({ ok: true });
+  return Response.json({ ok: true }, { headers: correlatedResponseHeaders(authorization, incomingRequestId) });
 }
 
 export async function DELETE(request: NextRequest) {

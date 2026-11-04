@@ -4,6 +4,7 @@ import {
   clearProfessionalSession,
   professionalApiFetch,
 } from "../../../../../lib/professional/professional-session";
+import { correlatedResponseHeaders, requestCorrelationHeaders } from "../../../../../lib/request-correlation";
 
 function readErrorCode(body: string) {
   try {
@@ -33,20 +34,21 @@ async function forward(
   }
 
   const body = request.method === "GET" ? undefined : await request.text();
+  const incomingRequestId = request.headers.get("x-request-id");
   const upstream = await professionalApiFetch(
     `/api/care/${relativePath}${request.nextUrl.search}`,
-    { method: request.method, body: body || undefined },
+    { method: request.method, headers: requestCorrelationHeaders(incomingRequestId), body: body || undefined },
   );
   const responseBody = await upstream.text();
   if (upstream.status === 403 && readErrorCode(responseBody) === "MFA_REQUIRED") {
     await clearProfessionalSession();
     return Response.json(
       { code: "MFA_REQUIRED", message: "Entre novamente e confirme o segundo fator." },
-      { status: 401 },
+      { status: 401, headers: correlatedResponseHeaders(upstream, incomingRequestId) },
     );
   }
 
-  const headers = new Headers();
+  const headers = correlatedResponseHeaders(upstream, incomingRequestId);
   headers.set("content-type", upstream.headers.get("content-type") || "application/json");
   const disposition = upstream.headers.get("content-disposition");
   if (disposition) headers.set("content-disposition", disposition);

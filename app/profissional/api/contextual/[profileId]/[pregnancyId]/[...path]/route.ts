@@ -9,6 +9,7 @@ import {
   normalizeContextualCareQuery,
 } from "../../../../../../../lib/professional/care-context-policy";
 import { professionalApiFetch } from "../../../../../../../lib/professional/professional-session";
+import { correlatedResponseHeaders } from "../../../../../../../lib/request-correlation";
 
 const noStore = { "cache-control": "private, no-store" };
 
@@ -55,10 +56,10 @@ async function forward(
   const responseBody = await upstream.text();
   return new Response(responseBody || null, {
     status: upstream.status,
-    headers: {
+    headers: correlatedResponseHeaders(upstream, request.headers.get("x-request-id"), {
       ...noStore,
       "content-type": upstream.headers.get("content-type") || "application/json",
-    },
+    }),
   });
 }
 

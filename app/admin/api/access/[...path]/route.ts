@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { adminApiFetch, clearAdminSession } from "../../../../../lib/admin/admin-session";
+import { correlatedResponseHeaders, requestCorrelationHeaders } from "../../../../../lib/request-correlation";
 
 const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
 const allowed = [
@@ -47,9 +48,11 @@ async function forward(request: NextRequest, context: RouteContext<"/admin/api/a
   }
 
   const query = request.nextUrl.search;
+  const incomingRequestId = request.headers.get("x-request-id");
   const body = request.method === "GET" ? undefined : await request.text();
   const upstream = await adminApiFetch(`/api/admin/${relativePath}${query}`, {
     method: request.method,
+    headers: requestCorrelationHeaders(incomingRequestId),
     body: body || undefined,
   });
   const responseBody = await upstream.text();
@@ -71,13 +74,15 @@ async function forward(request: NextRequest, context: RouteContext<"/admin/api/a
           code: "MFA_REQUIRED",
           message: "Entre novamente e confirme o segundo fator.",
         },
-        { status: 401 },
+        { status: 401, headers: correlatedResponseHeaders(upstream, incomingRequestId) },
       );
     }
   }
   return new Response(responseBody || null, {
     status: upstream.status,
-    headers: { "content-type": upstream.headers.get("content-type") || "application/json" },
+    headers: correlatedResponseHeaders(upstream, incomingRequestId, {
+      "content-type": upstream.headers.get("content-type") || "application/json",
+    }),
   });
 }
 

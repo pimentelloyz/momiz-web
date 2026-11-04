@@ -8,6 +8,7 @@ import {
 } from "../../../../../lib/professional/care-context-policy";
 import { professionalApiFetch } from "../../../../../lib/professional/professional-session";
 import { readProfessionalPatientsFresh } from "../../../../../lib/professional/professional-patient-reader";
+import { correlatedResponseHeaders } from "../../../../../lib/request-correlation";
 
 const browserHeaders = { "cache-control": "private, no-store" };
 
@@ -34,5 +35,11 @@ export async function GET(
   );
   const body = await upstream.text();
   const contentType = upstream.headers.get("content-type") || "application/json";
-  return new Response(body || null, { status: upstream.status, headers: { ...browserHeaders, "content-type": contentType } });
+  return new Response(body || null, {
+    status: upstream.status,
+    headers: correlatedResponseHeaders(upstream, request.headers.get("x-request-id"), {
+      ...browserHeaders,
+      "content-type": contentType,
+    }),
+  });
 }
