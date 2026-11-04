@@ -27,13 +27,15 @@ fixtures, artifacts ou logs.
 1. O preflight rejeita ambiente, URL ou SHA inválidos.
 2. O smoke HTTP exige respostas válidas para homepage, Apple association,
    Android asset links, termos gerais, termos profissionais e os dois logins.
-3. Os logins devem renderizar controles de autenticação e não podem exibir o
+3. Todas as superfícies devem apresentar o baseline de headers; logins também
+   devem responder com `no-store` e `noindex` defensivos.
+4. Os logins devem renderizar controles de autenticação e não podem exibir o
    estado de configuração indisponível.
-4. O Chromium é instalado antes do Playwright.
-5. O smoke autenticado cria sessão profissional com a conta sintética. Secrets
+5. O Chromium é instalado antes do Playwright.
+6. O smoke autenticado cria sessão profissional com a conta sintética. Secrets
    ausentes produzem falha explícita quando o teste é obrigatório; em Preview
    opcional, o caso é marcado como ignorado.
-6. O artifact `release-smoke-report.json` registra URL, SHA esperado, horários,
+7. O artifact `release-smoke-report.json` registra URL, SHA esperado, horários,
    status e `x-request-id`/`x-vercel-id` quando retornados.
 
 O gate não substitui testes manuais de Google, MFA, contas negadas, logout nem

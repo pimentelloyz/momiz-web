@@ -8,8 +8,7 @@ import {
   isValidCareContextPath,
   normalizeContextualCareQuery,
 } from "../../../../../../../lib/professional/care-context-policy";
-import { professionalApiFetch, professionalSessionEpoch } from "../../../../../../../lib/professional/professional-session";
-import { clearProfessionalPatientCache } from "../../../../../../../lib/professional/professional-patient-cache";
+import { professionalApiFetch } from "../../../../../../../lib/professional/professional-session";
 
 const noStore = { "cache-control": "private, no-store" };
 
@@ -54,7 +53,6 @@ async function forward(
     { method: request.method, headers, body: request.method === "GET" ? undefined : await request.text() || undefined },
   );
   const responseBody = await upstream.text();
-  if (request.method !== "GET" && upstream.ok) clearProfessionalPatientCache(await professionalSessionEpoch());
   return new Response(responseBody || null, {
     status: upstream.status,
     headers: {

@@ -58,7 +58,6 @@ export function ProfessionalPatientsPanel({ profileId, sessionEpoch }: Props) {
       if (!response.ok) throw readCanonicalCareError(body, "Não foi possível carregar as pacientes.");
       const page = parseProfessionalPatientsPage(body);
       if (page.items.some((item) => item.relationshipStatus === "UNKNOWN" || item.pregnancyStatus === "UNKNOWN")) {
-        await fetch(`/profissional/api/patients/${profileId}`, { method: "DELETE" });
         throw { code: "CARE_PATIENT_RESPONSE_INVALID", message: "A API retornou um estado ainda não suportado.", requestId: page.requestId } satisfies CanonicalCareError;
       }
       setItems((current) => cursor ? appendPatientPage(current, page.items) : page.items);

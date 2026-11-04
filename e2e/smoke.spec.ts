@@ -44,6 +44,19 @@ test("manifests de associação mobile preservam os identificadores oficiais", a
   expect(JSON.stringify(androidManifest)).toContain("com.lifeados.momiz.app");
 });
 
+test("headers defensivos protegem páginas públicas e superfícies sensíveis", async ({ request }) => {
+  const home = await request.get("/");
+  expect(home.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(home.headers()["x-frame-options"]).toBe("DENY");
+  expect(home.headers()["content-security-policy-report-only"]).toContain("frame-ancestors 'none'");
+
+  for (const path of ["/admin/login", "/profissional/login", "/api/deep-link-handoffs"]) {
+    const response = await request.get(path);
+    expect(response.headers()["cache-control"]).toContain("no-store");
+    expect(response.headers()["x-robots-tag"]).toContain("noindex");
+  }
+});
+
 test("convite público usa a API local e expõe o deep link", async ({ page }) => {
   await page.goto("/convite/smoke?guest=guest-smoke");
 

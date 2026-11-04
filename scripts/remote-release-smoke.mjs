@@ -23,13 +23,26 @@ function record(path, response, ok, detail) {
   });
 }
 
-async function checkText(path, expected, forbidden = []) {
+function missingSecurityHeaders(response, sensitive) {
+  const missing = [];
+  if (response.headers.get('x-content-type-options') !== 'nosniff') missing.push('x-content-type-options');
+  if (response.headers.get('x-frame-options') !== 'DENY') missing.push('x-frame-options');
+  if (!response.headers.get('referrer-policy')) missing.push('referrer-policy');
+  if (!response.headers.get('permissions-policy')) missing.push('permissions-policy');
+  if (!response.headers.get('content-security-policy-report-only')) missing.push('content-security-policy-report-only');
+  if (sensitive && !response.headers.get('cache-control')?.includes('no-store')) missing.push('cache-control');
+  if (sensitive && !response.headers.get('x-robots-tag')?.includes('noindex')) missing.push('x-robots-tag');
+  return missing;
+}
+
+async function checkText(path, expected, forbidden = [], sensitive = false) {
   const response = await fetch(new URL(path, baseUrl), { headers, redirect: 'follow' });
   const body = await response.text();
   const missing = expected.filter((value) => !body.includes(value));
   const present = forbidden.filter((value) => body.includes(value));
-  const ok = response.ok && missing.length === 0 && present.length === 0;
-  record(path, response, ok, ok ? 'ok' : `missing=${missing.length}; forbidden=${present.length}`);
+  const missingHeaders = missingSecurityHeaders(response, sensitive);
+  const ok = response.ok && missing.length === 0 && present.length === 0 && missingHeaders.length === 0;
+  record(path, response, ok, ok ? 'ok' : `missing=${missing.length}; forbidden=${present.length}; headers=${missingHeaders.join(',')}`);
 }
 
 async function checkJson(path, validate) {
@@ -40,7 +53,8 @@ async function checkJson(path, validate) {
   } catch {
     payload = null;
   }
-  const ok = response.ok && validate(payload);
+  const missingHeaders = missingSecurityHeaders(response, false);
+  const ok = response.ok && validate(payload) && missingHeaders.length === 0;
   record(path, response, ok, ok ? 'ok' : 'invalid response or manifest');
 }
 
@@ -60,8 +74,8 @@ try {
   );
   await checkText('/termos', ['Termos de uso']);
   await checkText('/health-professional-terms', ['Termos de uso para profissionais de saúde']);
-  await checkText('/admin/login', ['Acesso administrativo', 'Entrar com Google'], ['Login temporariamente indisponível']);
-  await checkText('/profissional/login', ['Acesso profissional', 'Entrar com Google'], ['Login temporariamente indisponível']);
+  await checkText('/admin/login', ['Acesso administrativo', 'Entrar com Google'], ['Login temporariamente indisponível'], true);
+  await checkText('/profissional/login', ['Acesso profissional', 'Entrar com Google'], ['Login temporariamente indisponível'], true);
 } catch (error) {
   checks.push({ path: 'transport', status: 0, ok: false, detail: error instanceof Error ? error.message : 'request failed', requestId: null, platformRequestId: null });
 }

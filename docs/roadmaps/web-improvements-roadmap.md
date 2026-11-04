@@ -67,12 +67,14 @@ Resultados: lint, typecheck, 55/55 testes unitários e build passaram; audit de 
 
 #### WEB-003 — Endurecer cabeçalhos e política de conteúdo
 
-- **Prioridade:** P1; **estado:** confirmado; **natureza:** quick win com etapa estrutural de CSP.
+- **Prioridade:** P1; **estado:** parcial — baseline local e CSP Report-Only concluídos em 04/11/2026; enforcement/smoke real pendentes; **natureza:** quick win com etapa estrutural de CSP.
 - **Evidência:** `next.config.ts:6-16` configura somente `Content-Type` dos manifests. Produção apresentou HSTS da plataforma, mas não CSP, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` ou proteção contra framing.
 - **Risco:** superfície maior para XSS, clickjacking, vazamento de referrer e abuso de capacidades do navegador, especialmente em telas com dados de saúde/admin.
 - **Proposta:** adicionar baseline global (`nosniff`, `frame-ancestors`, referrer e permissions); implantar CSP primeiro em `Report-Only`, inventariar Firebase/Google Fonts/conexões, migrar para enforcement com nonce/hash; usar `Cache-Control: private, no-store` e `X-Robots-Tag` nas rotas sensíveis.
 - **Dependências:** domínios Firebase/Auth/API e eventual coletor de relatórios CSP.
 - **Aceite/validação:** Mozilla Observatory/securityheaders compatível com a meta; login Google/MFA funciona; CSP não contém `unsafe-eval` em produção e violações são monitoradas.
+- **Evidência de implementação local:** `lib/security-headers.ts` define baseline global (`nosniff`, deny framing, referrer e capabilities) e CSP Report-Only sem `unsafe-eval`/wildcards; `next.config.ts` aplica `private, no-store` e `X-Robots-Tag` a `/admin/**`, `/profissional/**` e `/api/**`; testes unitários, E2E e smoke remoto verificam os headers. O inventário e a sequência segura até enforcement estão em `docs/security/headers-and-csp.md`.
+- **Pendências externas verificáveis:** executar Google/senha/TOTP no Preview e Production; configurar coletor de violações aprovado; observar e corrigir reports; remover `unsafe-inline` com suporte oficial de nonce/hash; ensaiar enforcement e rollback. Produção e enforcement não foram alterados neste pacote.
 
 #### WEB-004 — Observabilidade e recuperação de falhas
 
@@ -146,11 +148,12 @@ Resultados: lint, typecheck, 55/55 testes unitários e build passaram; audit de 
 
 #### WEB-012 — Semântica de cache adequada ao serverless e dados sensíveis
 
-- **Prioridade:** P2; **estado:** confirmado; impacto de consistência é hipótese.
+- **Prioridade:** P2; **estado:** resolvido localmente em 04/11/2026; validação operacional pendente.
 - **Evidência:** pacientes usam `Map` em memória com até 100 entradas/15 s (`lib/professional/professional-patient-cache.ts:3-21`). Em serverless, instâncias não compartilham memória e invalidação é local; a chave usa epoch de sessão, o que reduz mistura, mas não garante invalidação global.
 - **Risco:** comportamento inconsistente entre instâncias e complexidade sem benefício previsível; dados sensíveis permanecem em memória do processo.
 - **Proposta:** medir benefício; preferir ETag/no-store direto ou cache externo com criptografia, TTL, namespace e invalidação definida; documentar threat model.
 - **Aceite/validação:** teste multi-instância/revogação; nenhuma resposta revogada reaparece; hit ratio e latência justificam o cache.
+- **Decisão/evidência:** o `Map` de 15 segundos foi removido em vez de ganhar uma invalidação apenas local. `app/profissional/api/patients/[profileId]/route.ts` consulta a API em toda leitura por `readProfessionalPatientsFresh(..., cache: "no-store")`; sessão, perfil e autorização continuam no upstream. O teste de revogação simula resposta 200 seguida de 403 e comprova duas chamadas sem reaproveitamento. Como não há mais cache server-side clínico, hit ratio deixa de ser um critério de promoção; reintrodução exige medição, threat model e invalidação distribuída documentados.
 
 ### Later — performance, descoberta e manutenção contínua
 

@@ -9,7 +9,6 @@ import {
   professionalSessionEpoch,
   saveProfessionalContextPreference,
 } from "../../../../../lib/professional/professional-session";
-import { clearProfessionalPatientCache } from "../../../../../lib/professional/professional-patient-cache";
 
 const noStore = { "cache-control": "private, no-store" };
 
@@ -49,7 +48,6 @@ export async function POST(request: NextRequest) {
       throw new Error("CARE_CONTEXT_MISMATCH");
     }
     const sessionEpoch = await professionalSessionEpoch();
-    clearProfessionalPatientCache(sessionEpoch);
     await saveProfessionalContextPreference({ profileId: body.profileId, pregnancyId: body.pregnancyId });
     return Response.json({ ...parsed, sessionEpoch }, { headers: noStore });
   } catch {

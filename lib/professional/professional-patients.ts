@@ -60,10 +60,6 @@ export function parseProfessionalPatientsPage(value: unknown): ProfessionalPatie
   };
 }
 
-export function patientPageCacheKey(epoch: string, profileId: string, queryFingerprint: string) {
-  return `${epoch}:${profileId}:${queryFingerprint}`;
-}
-
 export function appendPatientPage(current: ProfessionalPatient[], incoming: ProfessionalPatient[]) {
   const seen = new Set(current.map((item) => item.relationshipId));
   return [...current, ...incoming.filter((item) => !seen.has(item.relationshipId))];

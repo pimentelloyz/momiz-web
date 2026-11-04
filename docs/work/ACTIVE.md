@@ -8,8 +8,8 @@
 - Fora de escopo: nenhum.
 - Critérios de aceite: n/a.
 - Verificações: n/a.
-- Dependências de API/app: WEB-002 preparado localmente; conclusão depende de conta sintética/secrets, execução em Preview e Production e ensaio autorizado de rollback. Chromium continua ausente localmente, mas é instalado nos workflows antes do E2E.
-- Próximo passo: coordenador configurar as dependências externas autorizadas e executar o runbook `docs/operations/release-gate.md` sem marcar WEB-002 como concluído antes das evidências reais.
+- Dependências de API/app: WEB-003 permanece parcial até smoke Firebase/Google, coletor e enforcement controlado; WEB-012 foi resolvido localmente removendo o cache clínico em memória, com validação operacional ainda pendente.
+- Próximo passo: coordenador executar o release gate em Preview/Production e seguir `docs/security/headers-and-csp.md` antes de considerar enforcement.
 
 ```markdown
 - Status:

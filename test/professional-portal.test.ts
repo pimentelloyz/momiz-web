@@ -42,9 +42,9 @@ import {
   appendPatientPage,
   isPatientCardAvailable,
   parseProfessionalPatientsPage,
-  patientPageCacheKey,
   relationshipStatusLabel as patientRelationshipStatusLabel,
 } from "../lib/professional/professional-patients.ts";
+import { readProfessionalPatientsFresh } from "../lib/professional/professional-patient-reader.ts";
 import {
   appendSharedDocuments,
   canOpenSharedDocument,
@@ -275,7 +275,7 @@ test("MT-03 patient DTO omits absent summaries and blocks unknown status", () =>
   assert.equal(patientRelationshipStatusLabel(page.items[0].relationshipStatus), "Indisponível");
 });
 
-test("MT-03 pagination dedupes by relationship and cache key segregates profile/query", () => {
+test("MT-03 pagination dedupes by relationship", () => {
   const base = {
     pregnancyId: "3dd3776b-683a-4861-b555-ae528fb99518",
     relationshipId: "5dd3776b-683a-4861-b555-ae528fb99518",
@@ -286,8 +286,23 @@ test("MT-03 pagination dedupes by relationship and cache key segregates profile/
     grantedScopes: [], summary: {}, updatedAt: "2026-10-28T15:12:00.000Z",
   };
   assert.equal(appendPatientPage([base], [base]).length, 1);
-  assert.notEqual(patientPageCacheKey("epoch", base.patient.profileId, "limit=25"), patientPageCacheKey("epoch", "other-profile", "limit=25"));
-  assert.notEqual(patientPageCacheKey("epoch", base.patient.profileId, "limit=25"), patientPageCacheKey("epoch", base.patient.profileId, "limit=25&q=ana"));
+});
+
+test("MT-03 always reads authorization-sensitive patients fresh after revocation", async () => {
+  const responses = [
+    new Response(JSON.stringify({ items: [{ relationshipStatus: "ACTIVE" }] }), { status: 200 }),
+    new Response(JSON.stringify({ error: { code: "CARE_PROFILE_ACCESS_DENIED" } }), { status: 403 }),
+  ];
+  const calls: RequestInit[] = [];
+  const fetcher = async (_path: string, init?: RequestInit) => {
+    calls.push(init || {});
+    return responses.shift() as Response;
+  };
+
+  assert.equal((await readProfessionalPatientsFresh(fetcher, "/patients", new Headers())).status, 200);
+  assert.equal((await readProfessionalPatientsFresh(fetcher, "/patients", new Headers())).status, 403);
+  assert.equal(calls.length, 2);
+  assert.deepEqual(calls.map((call) => call.cache), ["no-store", "no-store"]);
 });
 
 test("MT-03 BFF normalizes only allowlisted filters and creates profile-only headers", () => {

@@ -4,7 +4,6 @@ import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { API_BASE_URL } from "../site-config";
 import type { CareContextSelection } from "./care-context";
-import { clearProfessionalPatientCache } from "./professional-patient-cache";
 
 const accessCookie = "momiz_professional_access";
 const refreshCookie = "momiz_professional_refresh";
@@ -29,7 +28,6 @@ export async function saveProfessionalSession(tokens: TokenPair, preserveContext
   store.set(accessCookie, tokens.accessToken, cookieOptions(15 * 60));
   store.set(refreshCookie, tokens.refreshToken, cookieOptions(30 * 24 * 60 * 60));
   if (!preserveContext) {
-    clearProfessionalPatientCache(store.get(epochCookie)?.value);
     store.set(epochCookie, randomUUID(), cookieOptions(30 * 24 * 60 * 60));
     store.set(contextCookie, "", cookieOptions(0));
   }
@@ -37,7 +35,6 @@ export async function saveProfessionalSession(tokens: TokenPair, preserveContext
 
 export async function clearProfessionalSession() {
   const store = await cookies();
-  clearProfessionalPatientCache(store.get(epochCookie)?.value);
   store.set(accessCookie, "", cookieOptions(0));
   store.set(refreshCookie, "", cookieOptions(0));
   store.set(contextCookie, "", cookieOptions(0));
