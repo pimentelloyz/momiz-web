@@ -1,18 +1,17 @@
 # Trabalho ativo — Web
 
-- Status: em andamento
+- Status: aguardando próximo trabalho
 - Atualizado em: 2026-11-06
-- Identificador: prod-release-2026-11-10
-- Objetivo: versionar a recuperação do login administrativo e publicar a web em
-  produção.
-- Escopo: alterações pendentes de login, testes, checkpoints, validação, commit,
-  push, deploy Vercel e smoke remoto.
-- Fora de escopo: alterações funcionais novas, API e aplicativos móveis.
-- Critérios de aceite: gates locais aprovados; deployment associado ao SHA
-  versionado; `momiz.com.br` saudável; login apresenta recuperação sem travar.
-- Verificações: lint, typecheck, testes, build, preflight e smoke remoto.
+- Identificador: nenhum
+- Objetivo: nenhum trabalho ativo.
+- Escopo: não definido.
+- Fora de escopo: não definido.
+- Critérios de aceite: não definido.
+- Verificações: não definido.
 - Dependências de API/app: API de produção saudável; nenhuma publicação móvel.
-- Próximo passo: validar e publicar o SHA aprovado.
+- Próximo passo: iniciar o próximo pacote com novo checkpoint.
+- Último checkpoint:
+  `docs/work/completed/2026-11-10-prod-deploy-admin-login-recovery.md`.
 
 ```markdown
 - Status:
