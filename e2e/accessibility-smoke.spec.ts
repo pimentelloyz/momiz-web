@@ -19,9 +19,10 @@ test("termos permanecem legíveis a 200% sem overflow horizontal", async ({ page
 });
 
 test("indisponibilidade de login é anunciada e suporte funciona por teclado", async ({ page }) => {
-  await page.goto("/profissional/login");
+  await page.goto("/admin/login");
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("Login temporariamente indisponível");
+  await expect(page.getByRole("button", { name: "Sair e tentar novamente" })).toBeVisible();
   const support = page.getByRole("link", { name: "Acessar a Central de suporte" });
   await support.focus();
   await expect(support).toBeFocused();

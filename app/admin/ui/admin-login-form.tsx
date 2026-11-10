@@ -11,6 +11,7 @@ import {
   MultiFactorResolver,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signOut,
   TotpMultiFactorGenerator,
 } from "@firebase/auth";
 import { useRouter } from "next/navigation";
@@ -21,7 +22,7 @@ type Props = {
   firebaseConfig: FirebaseClientConfig | null;
 };
 
-type LoginMethod = "password" | "google";
+type LoginMethod = "password" | "google" | "logout";
 
 const firebaseAppName = "momiz-admin";
 
@@ -172,6 +173,25 @@ export function AdminLoginForm({ firebaseConfig }: Props) {
     }
   }
 
+  async function resetSession() {
+    setError("");
+    setLoading("logout");
+    try {
+      const existingApp = getApps().find((app) => app.name === firebaseAppName);
+      if (existingApp) await signOut(getAuth(existingApp));
+      await fetch("/admin/api/session", {
+        method: "DELETE",
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch {
+      // A limpeza local ainda deve terminar com uma nova carga da tela.
+    } finally {
+      setLoading(null);
+      router.replace("/admin/login");
+      router.refresh();
+    }
+  }
+
   if (mfaResolver) {
     return (
       <form className={styles.form} onSubmit={confirmMfa}>
@@ -215,6 +235,14 @@ export function AdminLoginForm({ firebaseConfig }: Props) {
       <div className={styles.authUnavailable} role="alert">
         <strong>Login temporariamente indisponível</strong>
         <p>Não foi possível iniciar a autenticação neste momento. Tente novamente mais tarde ou acesse o suporte.</p>
+        <button
+          className={styles.secondaryButton}
+          disabled={loading !== null}
+          onClick={() => void resetSession()}
+          type="button"
+        >
+          {loading === "logout" ? "Saindo…" : "Sair e tentar novamente"}
+        </button>
         <a href="/suporte">Acessar a Central de suporte</a>
       </div>
     );

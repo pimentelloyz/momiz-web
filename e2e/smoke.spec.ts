@@ -122,6 +122,10 @@ test("painel administrativo explica autenticação indisponível", async ({ page
 
   await expect(page.getByRole("heading", { level: 1, name: "Acesso administrativo" })).toBeVisible();
   await expect(page.getByRole("alert")).toContainText("Login temporariamente indisponível");
+  const retry = page.getByRole("button", { name: "Sair e tentar novamente" });
+  await expect(retry).toBeVisible();
+  await retry.click();
+  await expect(page.getByRole("button", { name: "Sair e tentar novamente" })).toBeEnabled();
   await expect(page.getByRole("link", { name: "Acessar a Central de suporte" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Entrar" })).toHaveCount(0);
 });
