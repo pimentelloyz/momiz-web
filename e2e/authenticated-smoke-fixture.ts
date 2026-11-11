@@ -14,3 +14,16 @@ export function readSyntheticAccount(env: Record<string, string | undefined>): S
     surface: env.SMOKE_AUTH_SURFACE === "admin" ? "admin" : "profissional",
   };
 }
+
+export function localAdminFixtureCookies(baseUrl: string) {
+  try {
+    const url = new URL(baseUrl);
+    if (url.protocol !== "http:" || !["127.0.0.1", "localhost", "::1"].includes(url.hostname)) return null;
+    return [
+      { name: "momiz_admin_access", value: "local-fixture-access", url: `${url.origin}/admin`, httpOnly: true, sameSite: "Lax" as const },
+      { name: "momiz_admin_refresh", value: "local-fixture-refresh", url: `${url.origin}/admin`, httpOnly: true, sameSite: "Lax" as const },
+    ];
+  } catch {
+    return null;
+  }
+}

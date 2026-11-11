@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const appUrl = "http://127.0.0.1:3021";
-const mockApiUrl = "http://127.0.0.1:3022";
+const appUrl = "http://127.0.0.1:3121";
+const mockApiUrl = "http://127.0.0.1:3122";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -35,11 +35,12 @@ export default defineConfig({
     {
       command: "node e2e/mock-api.mjs",
       url: `${mockApiUrl}/health`,
+      env: { MOMIZ_E2E_MOCK_PORT: "3122" },
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,
     },
     {
-      command: "npx next start --hostname 127.0.0.1 --port 3021",
+      command: "npx next start --hostname 127.0.0.1 --port 3121",
       url: appUrl,
       env: {
         API_BASE_URL: mockApiUrl,

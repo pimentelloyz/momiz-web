@@ -1,6 +1,17 @@
 import { createServer } from "node:http";
 
-const port = 3022;
+const port = Number(process.env.MOMIZ_E2E_MOCK_PORT || 3022);
+const professionalProfileId = "10000000-0000-4000-8000-000000000001";
+const credentialIds = {
+  valid: "20000000-0000-4000-8000-000000000001",
+  invalid: "20000000-0000-4000-8000-000000000002",
+  expired: "20000000-0000-4000-8000-000000000003",
+};
+
+function json(response, status, body, headers = {}) {
+  response.writeHead(status, { "content-type": "application/json", ...headers });
+  response.end(JSON.stringify(body));
+}
 
 const eventDetails = {
   event: {
@@ -33,6 +44,71 @@ const server = createServer((request, response) => {
     return;
   }
 
+  if (url.pathname === "/fixture/credential") {
+    response.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+    response.end("<!doctype html><html lang=\"pt-BR\"><title>Fixture de comprovante</title><body><h1>Comprovante sintético aberto</h1></body></html>");
+    return;
+  }
+
+  if (url.pathname === "/api/admin/users") {
+    json(response, 200, { items: [] });
+    return;
+  }
+
+  if (url.pathname === "/api/admin/care/profiles") {
+    json(response, 200, { profiles: [{
+      id: professionalProfileId,
+      primaryProfession: "DOULA",
+      displayName: "Profissional Sintética",
+      bio: null,
+      city: "Cidade Teste",
+      state: "SP",
+      verificationStatus: "PENDING_VERIFICATION",
+      submittedAt: "2026-11-11T12:00:00.000Z",
+      verifiedAt: null,
+      user: { id: "user-synthetic", name: "Conta Sintética", email: "synthetic@example.test", photoUrl: null },
+      credentials: [
+        { id: credentialIds.valid, type: "Credencial válida", registrationNumber: "FIXTURE-1", jurisdiction: "SP", specialty: null, issuer: "Fixture", expiresAt: null, status: "PENDING", reviewReason: null, documentFileName: "valid.pdf", renewalOfCredentialId: null },
+        { id: credentialIds.invalid, type: "Payload inválido", registrationNumber: "FIXTURE-2", jurisdiction: "SP", specialty: null, issuer: "Fixture", expiresAt: null, status: "PENDING", reviewReason: null, documentFileName: "invalid.pdf", renewalOfCredentialId: null },
+        { id: credentialIds.expired, type: "URL expirada", registrationNumber: "FIXTURE-3", jurisdiction: "SP", specialty: null, issuer: "Fixture", expiresAt: null, status: "PENDING", reviewReason: null, documentFileName: "expired.pdf", renewalOfCredentialId: null },
+      ],
+      reviewLogs: [],
+    }] });
+    return;
+  }
+
+  if (url.pathname === "/api/admin/care/metrics") {
+    json(response, 200, { metrics: { activeRelationships: 1, pausedRelationships: 0, expiringRelationships: 0, blockedCommunications: 0, openReports: 0, pendingProfiles: 1, expiringCredentials: 0, expiredProfiles: 0, auditEventsLast24h: 1, deniedAuditEventsLast24h: 0 } });
+    return;
+  }
+
+  if (url.pathname === "/api/admin/care/pilot-readiness") {
+    json(response, 200, { readiness: { ready: false, advisoryOnly: true, rolloutAutomaticallyEnabled: false, approvedCount: 0, requiredCount: 0, gates: [] } });
+    return;
+  }
+
+  if (url.pathname === "/api/admin/care/communication-reports") {
+    json(response, 200, { reports: [] });
+    return;
+  }
+
+  const credentialMatch = url.pathname.match(new RegExp(`^/api/admin/care/profiles/${professionalProfileId}/credentials/([0-9a-f-]+)/download-url$`));
+  if (credentialMatch) {
+    const credentialId = credentialMatch[1];
+    if (credentialId === credentialIds.valid) {
+      json(response, 200, { downloadUrl: `http://127.0.0.1:${port}/fixture/credential`, requestId: "req-credential-valid" });
+      return;
+    }
+    if (credentialId === credentialIds.invalid) {
+      json(response, 200, { downloadUrl: "javascript:fixture-secret", requestId: "req-credential-invalid" });
+      return;
+    }
+    if (credentialId === credentialIds.expired) {
+      json(response, 410, { message: "A URL temporária expirou.", code: "CREDENTIAL_URL_EXPIRED", requestId: "req-credential-expired" }, { "x-request-id": "req-credential-expired" });
+      return;
+    }
+  }
+
   const match = url.pathname.match(/^\/api\/events\/by-slug\/([^/]+)\/details$/);
   if (!match) {
     response.writeHead(404).end();
@@ -41,19 +117,16 @@ const server = createServer((request, response) => {
 
   const slug = decodeURIComponent(match[1]);
   if (slug === "smoke") {
-    response.writeHead(200, { "content-type": "application/json" });
-    response.end(JSON.stringify(eventDetails));
+    json(response, 200, eventDetails);
     return;
   }
 
   if (slug === "transient") {
-    response.writeHead(503, { "content-type": "application/json" });
-    response.end(JSON.stringify({ error: "temporary fixture failure" }));
+    json(response, 503, { error: "temporary fixture failure" });
     return;
   }
 
-  response.writeHead(404, { "content-type": "application/json" });
-  response.end(JSON.stringify({ error: "fixture not found" }));
+  json(response, 404, { error: "fixture not found" });
 });
 
 server.listen(port, "127.0.0.1", () => {

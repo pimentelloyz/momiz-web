@@ -27,6 +27,12 @@ O servidor do teste usa o build local e `e2e/mock-api.mjs`. Convites usam apenas
 fixtures fictícias; homepage, páginas legais, manifests e estados isolados de
 login não dependem da API externa.
 
+O smoke de comprovante administrativo roda nesse mesmo ambiente sintético. Ele
+usa as portas dedicadas `3121`/`3122`, aceita a sessão fixture somente em HTTP
+loopback e cobre popup válido, payload inseguro e URL expirada com `requestId`.
+A URL efêmera não entra em snapshot ou log; screenshot, trace e vídeo continuam
+desligados. Nenhuma chamada ao Preview ou ao armazenamento real é feita.
+
 ## Cobertura acessível incremental
 
 - ativação do CTA por foco e teclado;
@@ -46,3 +52,8 @@ VoiceOver/TalkBack, zoom 400% e auditoria manual WCAG continuam pendentes.
 estado desabilitado; não inventa credencial. O teste remoto usa configuração
 separada, sem screenshot/trace/vídeo. Login real continua restrito ao release
 gate autorizado e não faz parte da suíte local.
+
+Para um smoke futuro no Preview, mantenha essa separação: use a conta sintética
+já suportada pelas variáveis acima, interrompa/ignore com segurança quando os
+secrets não existirem e injete o cenário de comprovante por fixture autorizada.
+Não registre a URL retornada e não reutilize o mock local contra host remoto.

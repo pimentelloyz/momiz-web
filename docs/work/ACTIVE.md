@@ -1,18 +1,17 @@
 # Trabalho ativo — Web
 
-- Status: aguardando próximo trabalho
+- Status: aguardando próxima tarefa
 - Atualizado em: 2026-11-11
 - Identificador: nenhum
-- Objetivo: nenhum trabalho ativo.
-- Escopo: não definido.
-- Fora de escopo: não definido.
-- Critérios de aceite: não definido.
-- Verificações: não definido.
-- Dependências de API/app: habilitação coordenada das flags correspondentes na
-  API antes de qualquer rollout remoto do portal contextual.
-- Próximo passo: validar comprovantes e demais mutações em Preview autenticado.
+- Objetivo: nenhuma implementação ativa.
+- Escopo: a definir pelo coordenador.
+- Fora de escopo: a definir pelo coordenador.
+- Critérios de aceite: a definir pelo coordenador.
+- Verificações: a definir pelo coordenador.
+- Dependências de API/app: nenhuma tarefa ativa.
+- Próximo passo: aguardar novo pacote de trabalho.
 - Último checkpoint:
-  `docs/work/completed/2026-11-11-feedback-local-comprovante-admin.md`.
+  `docs/work/completed/2026-11-11-smoke-comprovante-admin.md`.
 
 ```markdown
 - Status:

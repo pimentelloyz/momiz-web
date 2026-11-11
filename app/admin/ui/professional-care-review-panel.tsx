@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { adminApi, adminErrorMessage, isAdminSessionExpired, jsonRequest } from "./admin-api-client";
+import { AdminApiError, adminApi, adminErrorMessage, isAdminSessionExpired, jsonRequest } from "./admin-api-client";
 import { FeedbackState, MutationFeedback } from "./admin-primitives";
 import { AdminMutationState, AdminQueryState, runAdminMutation, runAdminQuery } from "./admin-query-state";
 import { readCredentialDownloadUrl } from "./admin-credential-download";
@@ -455,18 +455,23 @@ export function ProfessionalCareReviewPanel({
 
   async function openCredential(credential: Credential) {
     if (!selected || !credential.documentFileName) return;
-    const popup = window.open("", "_blank", "noopener,noreferrer");
     setCredentialMutations((current) => ({ ...current, [credential.id]: { phase: "pending" } }));
     const result = await runAdminMutation(async () => {
       const payload = await adminApi(
         `care/profiles/${selected.id}/credentials/${credential.id}/download-url`,
       );
       const downloadUrl = readCredentialDownloadUrl(payload);
-      if (popup) popup.location.replace(downloadUrl);
-      else window.location.assign(downloadUrl);
+      const popup = window.open("about:blank", "_blank");
+      if (!popup) throw new AdminApiError({
+        message: "O navegador bloqueou a abertura do comprovante.",
+        code: "ADMIN_CREDENTIAL_POPUP_BLOCKED",
+        requestId: null,
+        status: 409,
+      });
+      popup.opener = null;
+      popup.location.replace(downloadUrl);
     }, "Comprovante aberto em uma nova janela.");
     if (result.phase === "error") {
-      popup?.close();
       if (isAdminSessionExpired(result.error)) {
         onSessionExpired();
         return;
