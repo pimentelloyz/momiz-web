@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { adminApi, adminErrorMessage, isAdminSessionExpired, jsonRequest } from "./admin-api-client";
+import { FeedbackState } from "./admin-primitives";
+import { AdminQueryState, runAdminQuery } from "./admin-query-state";
 import {
   PilotDraft,
   PilotGate,
@@ -57,6 +59,19 @@ type ProfessionalProfile = {
 };
 
 type CommunicationReportStatus = "OPEN" | "RESOLVED" | "DISMISSED";
+
+type Operations = {
+  active: number;
+  paused: number;
+  expiring: number;
+  blocked: number;
+  auditEvents: number;
+  deniedAuditEvents: number;
+  openReports: number;
+  pendingProfiles: number;
+  expiringCredentials: number;
+  expiredProfiles: number;
+};
 
 type CommunicationReport = {
   id: string;
@@ -142,18 +157,7 @@ export function ProfessionalCareReviewPanel({
   const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState(false);
   const [openingCredential, setOpeningCredential] = useState<string | null>(null);
-  const [operations, setOperations] = useState({
-    active: 0,
-    paused: 0,
-    expiring: 0,
-    blocked: 0,
-    auditEvents: 0,
-    deniedAuditEvents: 0,
-    openReports: 0,
-    pendingProfiles: 0,
-    expiringCredentials: 0,
-    expiredProfiles: 0,
-  });
+  const [metricsState, setMetricsState] = useState<AdminQueryState<Operations>>({ phase: "loading" });
   const [reportStatus, setReportStatus] = useState<CommunicationReportStatus>("OPEN");
   const [reports, setReports] = useState<CommunicationReport[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
@@ -230,10 +234,10 @@ export function ProfessionalCareReviewPanel({
     return () => { active = false; };
   }, [onMessage, onSessionExpired, status]);
 
-  useEffect(() => {
-    let active = true;
-    adminApi("care/metrics").then((data) => {
-      if (!active) return;
+  const loadMetrics = useCallback(async () => {
+    setMetricsState({ phase: "loading" });
+    const next = await runAdminQuery(async () => {
+      const data = await adminApi("care/metrics");
       const metrics = (data as { metrics: {
         activeRelationships: number;
         pausedRelationships: number;
@@ -246,7 +250,7 @@ export function ProfessionalCareReviewPanel({
         auditEventsLast24h: number;
         deniedAuditEventsLast24h: number;
       } }).metrics;
-      setOperations({
+      return {
         active: metrics.activeRelationships,
         paused: metrics.pausedRelationships,
         expiring: metrics.expiringRelationships,
@@ -257,14 +261,16 @@ export function ProfessionalCareReviewPanel({
         pendingProfiles: metrics.pendingProfiles,
         expiringCredentials: metrics.expiringCredentials,
         expiredProfiles: metrics.expiredProfiles,
-      });
-    }).catch((error: unknown) => {
-      if (!active) return;
-      if (isAdminSessionExpired(error)) onSessionExpired();
-      else onMessage(adminErrorMessage(error, "Não foi possível carregar as métricas."));
-    });
-    return () => { active = false; };
-  }, [onMessage, onSessionExpired]);
+      } satisfies Operations;
+    }, (metrics) => Object.values(metrics).every((value) => value === 0));
+    if (next.phase === "error" && isAdminSessionExpired(next.error)) {
+      onSessionExpired();
+      return;
+    }
+    setMetricsState(next);
+  }, [onSessionExpired]);
+
+  useEffect(() => { void loadMetrics(); }, [loadMetrics]);
 
   const applyPilotReadiness = useCallback((readiness: PilotReadiness) => {
     setPilotReadiness(readiness);
@@ -421,10 +427,7 @@ export function ProfessionalCareReviewPanel({
       onMessage(decision === "resolve" ? "Denúncia resolvida e auditada." : "Denúncia descartada com justificativa.");
       setResolutionNote("");
       await loadReports();
-      setOperations((current) => ({
-        ...current,
-        openReports: Math.max(0, current.openReports - 1),
-      }));
+      await loadMetrics();
     } catch (error) {
       if (isAdminSessionExpired(error)) onSessionExpired();
       else onMessage(adminErrorMessage(error, "Não foi possível encerrar a denúncia."));
@@ -515,18 +518,32 @@ export function ProfessionalCareReviewPanel({
             </select>
           </label>
         </div>
-        <div className={styles.impactGrid}>
-          <div><strong>{operations.active}</strong><span>vínculos ativos</span></div>
-          <div><strong>{operations.paused}</strong><span>vínculos pausados</span></div>
-          <div><strong>{operations.expiring}</strong><span>expiram em até 7 dias</span></div>
-          <div><strong>{operations.blocked}</strong><span>comunicações bloqueadas</span></div>
-          <div><strong>{operations.pendingProfiles}</strong><span>perfis aguardando análise</span></div>
-          <div><strong>{operations.expiringCredentials}</strong><span>credenciais vencem em até 30 dias</span></div>
-          <div><strong>{operations.expiredProfiles}</strong><span>perfis expirados</span></div>
-          <div><strong>{operations.openReports}</strong><span>denúncias abertas</span></div>
-          <div><strong>{operations.auditEvents}</strong><span>acessos auditados em 24h</span></div>
-          <div><strong>{operations.deniedAuditEvents}</strong><span>acessos negados em 24h</span></div>
-        </div>
+        {metricsState.phase === "loading" ? (
+          <FeedbackState variant="loading" title="Carregando indicadores" description="Consultando métricas operacionais atualizadas." className={styles.feedback} />
+        ) : metricsState.phase === "error" ? (
+          <FeedbackState
+            variant="error"
+            title="Não foi possível carregar os indicadores"
+            description={adminErrorMessage(metricsState.error, "Não foi possível carregar as métricas.")}
+            action={<button type="button" className={styles.secondaryButton} onClick={() => void loadMetrics()}>Tentar novamente</button>}
+            className={styles.feedback}
+          />
+        ) : metricsState.phase === "empty" ? (
+          <FeedbackState variant="empty" title="Nenhuma atividade no momento" description="A consulta foi concluída e todos os indicadores retornaram zero." className={styles.feedback} />
+        ) : (
+          <div className={styles.impactGrid}>
+            <div><strong>{metricsState.data.active}</strong><span>vínculos ativos</span></div>
+            <div><strong>{metricsState.data.paused}</strong><span>vínculos pausados</span></div>
+            <div><strong>{metricsState.data.expiring}</strong><span>expiram em até 7 dias</span></div>
+            <div><strong>{metricsState.data.blocked}</strong><span>comunicações bloqueadas</span></div>
+            <div><strong>{metricsState.data.pendingProfiles}</strong><span>perfis aguardando análise</span></div>
+            <div><strong>{metricsState.data.expiringCredentials}</strong><span>credenciais vencem em até 30 dias</span></div>
+            <div><strong>{metricsState.data.expiredProfiles}</strong><span>perfis expirados</span></div>
+            <div><strong>{metricsState.data.openReports}</strong><span>denúncias abertas</span></div>
+            <div><strong>{metricsState.data.auditEvents}</strong><span>acessos auditados em 24h</span></div>
+            <div><strong>{metricsState.data.deniedAuditEvents}</strong><span>acessos negados em 24h</span></div>
+          </div>
+        )}
       </section>
 
       <section className={styles.sectionCard}>

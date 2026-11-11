@@ -22,6 +22,14 @@ test("feedback variants announce loading, success and actionable failures", () =
   assert.match(success, /data-feedback="success"/);
   assert.match(success, /role="status"/);
 
+  const empty = renderToStaticMarkup(createElement(FeedbackState, {
+    variant: "empty",
+    title: "Nenhuma atividade",
+    description: "A consulta foi concluída sem ocorrências.",
+  }));
+  assert.match(empty, /data-feedback="empty"/);
+  assert.match(empty, /role="status"/);
+
   for (const variant of ["error", "denied"] as const) {
     const failure = renderToStaticMarkup(createElement(FeedbackState, {
       variant,
