@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdminApiError, adminApi, adminErrorMessage, isAdminSessionExpired, jsonRequest } from "./admin-api-client";
 import { FeedbackState, MutationFeedback } from "./admin-primitives";
 import { AdminMutationState, AdminQueryState, runAdminMutation, runAdminQuery } from "./admin-query-state";
 import { readCredentialDownloadUrl } from "./admin-credential-download";
+import { AdminProfilePage, mergeAdminProfilePages, readAdminProfilePage } from "./admin-profile-pagination";
 import {
   PilotDraft,
   PilotGate,
@@ -150,7 +151,10 @@ export function ProfessionalCareReviewPanel({
   onSessionExpired: () => void;
 }) {
   const [status, setStatus] = useState<VerificationStatus>("PENDING_VERIFICATION");
-  const [profilesState, setProfilesState] = useState<AdminQueryState<ProfessionalProfile[]>>({ phase: "loading" });
+  const [profilesState, setProfilesState] = useState<AdminQueryState<AdminProfilePage<ProfessionalProfile>>>({ phase: "loading" });
+  const [profilesMoreState, setProfilesMoreState] = useState<AdminQueryState<AdminProfilePage<ProfessionalProfile>> | { phase: "idle" }>({ phase: "idle" });
+  const activeProfileStatusRef = useRef(status);
+  const profileRequestVersionRef = useRef(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [reviewMutation, setReviewMutation] = useState<AdminMutationState>({ phase: "idle" });
@@ -165,8 +169,12 @@ export function ProfessionalCareReviewPanel({
   const [pilotDrafts, setPilotDrafts] = useState<Record<string, PilotDraft>>({});
   const [pilotMutations, setPilotMutations] = useState<Record<string, AdminMutationState>>({});
 
+  useEffect(() => {
+    activeProfileStatusRef.current = status;
+  }, [status]);
+
   const profiles = useMemo(
-    () => profilesState.phase === "ready" || profilesState.phase === "empty" ? profilesState.data : [],
+    () => profilesState.phase === "ready" || profilesState.phase === "empty" ? profilesState.data.items : [],
     [profilesState],
   );
   const reports = useMemo(
@@ -192,23 +200,53 @@ export function ProfessionalCareReviewPanel({
   const isRenewalReview = selected?.verificationStatus === "VERIFIED" && pendingRenewals.length > 0;
 
   const loadProfiles = useCallback(async () => {
+    const requestedStatus = status;
+    const requestVersion = profileRequestVersionRef.current + 1;
+    profileRequestVersionRef.current = requestVersion;
     setProfilesState({ phase: "loading" });
+    setProfilesMoreState({ phase: "idle" });
     const next = await runAdminQuery(async () => {
-      const data = (await adminApi(`care/profiles?status=${status}`)) as {
-        profiles: ProfessionalProfile[];
-      };
-      return data.profiles;
-    }, (items) => items.length === 0);
+      const query = new URLSearchParams({ status: requestedStatus, limit: "50" });
+      return readAdminProfilePage<ProfessionalProfile>(await adminApi(`care/profiles?${query}`));
+    }, (page) => page.items.length === 0);
+    if (activeProfileStatusRef.current !== requestedStatus || profileRequestVersionRef.current !== requestVersion) return next;
     if (next.phase === "error" && isAdminSessionExpired(next.error)) {
       onSessionExpired();
       return next;
     }
     if (next.phase === "ready" || next.phase === "empty") {
-      setSelectedId((current) => next.data.some((profile) => profile.id === current) ? current : next.data[0]?.id ?? null);
+      setSelectedId((current) => next.data.items.some((profile) => profile.id === current) ? current : next.data.items[0]?.id ?? null);
     }
     setProfilesState(next);
     return next;
   }, [onSessionExpired, status]);
+
+  const loadMoreProfiles = useCallback(async () => {
+    if (profilesState.phase !== "ready" || !profilesState.data.nextCursor || profilesMoreState.phase === "loading") return;
+    const requestedStatus = status;
+    const cursor = profilesState.data.nextCursor;
+    const requestVersion = profileRequestVersionRef.current;
+    setProfilesMoreState({ phase: "loading" });
+    const next = await runAdminQuery(async () => {
+      const query = new URLSearchParams({ status: requestedStatus, limit: "50", cursor });
+      return readAdminProfilePage<ProfessionalProfile>(await adminApi(`care/profiles?${query}`));
+    }, () => false);
+    if (activeProfileStatusRef.current !== requestedStatus || profileRequestVersionRef.current !== requestVersion) return;
+    if (next.phase === "error") {
+      if (isAdminSessionExpired(next.error)) onSessionExpired();
+      setProfilesMoreState(next);
+      return;
+    }
+    if (next.phase !== "ready" && next.phase !== "empty") return;
+    setProfilesState((current) => {
+      if (current.phase !== "ready" && current.phase !== "empty") return current;
+      return {
+        phase: "ready",
+        data: { items: mergeAdminProfilePages(current.data.items, next.data.items), nextCursor: next.data.nextCursor },
+      };
+    });
+    setProfilesMoreState({ phase: "idle" });
+  }, [onSessionExpired, profilesMoreState.phase, profilesState, status]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadProfiles(), 0);
@@ -639,17 +677,41 @@ export function ProfessionalCareReviewPanel({
               />
             ) : profilesState.phase === "empty" ? (
               <FeedbackState variant="empty" title="Nenhum cadastro nesta situação" description="A consulta foi concluída e não há perfis nesta fila." className={styles.feedback} />
-            ) : profiles.map((profile) => (
-              <button
-                key={profile.id}
-                className={selected?.id === profile.id ? styles.reviewSelected : styles.reviewItem}
-                onClick={() => { setSelectedId(profile.id); setReason(""); setReviewMutation({ phase: "idle" }); }}
-              >
-                <strong>{profile.displayName}</strong>
-                <span>{professionLabels[profile.primaryProfession] ?? profile.primaryProfession}</span>
-                <small>{profile.user.email}</small>
-              </button>
-            ))}
+            ) : (
+              <>
+                {profiles.map((profile) => (
+                  <button
+                    key={profile.id}
+                    className={selected?.id === profile.id ? styles.reviewSelected : styles.reviewItem}
+                    onClick={() => { setSelectedId(profile.id); setReason(""); setReviewMutation({ phase: "idle" }); }}
+                  >
+                    <strong>{profile.displayName}</strong>
+                    <span>{professionLabels[profile.primaryProfession] ?? profile.primaryProfession}</span>
+                    <small>{profile.user.email}</small>
+                  </button>
+                ))}
+                {profilesMoreState.phase === "error" && (
+                  <FeedbackState
+                    variant="error"
+                    title="Não foi possível carregar mais cadastros"
+                    description={adminErrorMessage(profilesMoreState.error, "Os cadastros já carregados continuam disponíveis.")}
+                    action={<button type="button" className={styles.secondaryButton} onClick={() => void loadMoreProfiles()}>Tentar novamente</button>}
+                    className={styles.feedback}
+                  />
+                )}
+                {profilesState.data.nextCursor && profilesMoreState.phase !== "error" && (
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    disabled={profilesMoreState.phase === "loading"}
+                    aria-busy={profilesMoreState.phase === "loading"}
+                    onClick={() => void loadMoreProfiles()}
+                  >
+                    {profilesMoreState.phase === "loading" ? "Carregando mais…" : "Carregar mais cadastros"}
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </aside>
 

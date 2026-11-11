@@ -56,7 +56,7 @@ const server = createServer((request, response) => {
   }
 
   if (url.pathname === "/api/admin/care/profiles") {
-    json(response, 200, { profiles: [{
+    const profiles = [{
       id: professionalProfileId,
       primaryProfession: "DOULA",
       displayName: "Profissional Sintética",
@@ -73,7 +73,8 @@ const server = createServer((request, response) => {
         { id: credentialIds.expired, type: "URL expirada", registrationNumber: "FIXTURE-3", jurisdiction: "SP", specialty: null, issuer: "Fixture", expiresAt: null, status: "PENDING", reviewReason: null, documentFileName: "expired.pdf", renewalOfCredentialId: null },
       ],
       reviewLogs: [],
-    }] });
+    }];
+    json(response, 200, { items: profiles, profiles, nextCursor: null });
     return;
   }
 
