@@ -57,3 +57,30 @@ Para um smoke futuro no Preview, mantenha essa separação: use a conta sintéti
 já suportada pelas variáveis acima, interrompa/ignore com segurança quando os
 secrets não existirem e injete o cenário de comprovante por fixture autorizada.
 Não registre a URL retornada e não reutilize o mock local contra host remoto.
+
+## Gate do comprovante em Preview
+
+O gate remoto é separado do smoke local e não faz parte de `npm run test:e2e`:
+
+```bash
+SMOKE_PREVIEW_OPT_IN=RUN_SYNTHETIC_CREDENTIAL_PREVIEW_SMOKE \
+SMOKE_ENVIRONMENT=preview \
+SMOKE_BASE_URL=https://preview.example.test/ \
+SMOKE_AUTH_SURFACE=admin \
+SMOKE_AUTH_EMAIL='conta-sintetica' \
+SMOKE_AUTH_PASSWORD='secret-do-ci' \
+SMOKE_CREDENTIAL_TEST_MARKER='marcador-sintetico-unico' \
+npm run test:e2e:credential:preview
+```
+
+O comando valida todos os campos antes de iniciar o Playwright. A URL deve ser
+HTTPS e conter apenas a origem; o opt-in precisa ser literal, a superfície deve
+ser `admin` e o marcador precisa identificar exatamente uma credencial da conta
+sintética. `npm run test:e2e:credential:preview:check` permite obter evidência
+somente do preflight, sem iniciar browser ou rede.
+
+A configuração seleciona exclusivamente `preview-credential.spec.ts`, usa um
+único worker e mantém screenshot, trace e vídeo desligados. Nem secrets nem a
+URL assinada são impressos ou persistidos. O token de bypass é opcional e fica
+somente em header. A execução remota requer autorização operacional separada;
+este checkpoint validou apenas o preflight local.
