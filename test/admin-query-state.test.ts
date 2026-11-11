@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { AdminApiError } from "../app/admin/ui/admin-api-client.ts";
-import { runAdminQuery } from "../app/admin/ui/admin-query-state.ts";
+import { runAdminMutation, runAdminQuery } from "../app/admin/ui/admin-query-state.ts";
 
 test("localized admin query keeps a partial failure distinct from zero data and retries safely", async () => {
   const failure = new AdminApiError({
@@ -101,4 +101,27 @@ test("pilot readiness retries independently and preserves the canonical error", 
   assert.equal(readinessRetried.phase, "ready");
   assert.equal(readinessReads, 2);
   assert.equal(metricReads, 1);
+});
+
+test("independent admin mutations preserve one failure without blocking another success", async () => {
+  const failure = new AdminApiError({
+    message: "Revisão recusada.",
+    code: "PROFESSIONAL_REVIEW_CONFLICT",
+    requestId: "req-review-conflict",
+    status: 409,
+  });
+  let reviewCalls = 0;
+  let gateCalls = 0;
+
+  const [review, gate] = await Promise.all([
+    runAdminMutation(async () => { reviewCalls += 1; throw failure; }, "Perfil revisado."),
+    runAdminMutation(async () => { gateCalls += 1; }, "Gate registrado."),
+  ]);
+
+  assert.equal(review.phase, "error");
+  if (review.phase !== "error") assert.fail("A revisão deveria preservar a falha.");
+  assert.equal(review.error, failure);
+  assert.deepEqual(gate, { phase: "success", message: "Gate registrado." });
+  assert.equal(reviewCalls, 1);
+  assert.equal(gateCalls, 1);
 });

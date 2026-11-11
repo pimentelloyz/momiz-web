@@ -1,6 +1,7 @@
 "use client";
 
-import { FeedbackState, FormField } from "./admin-primitives";
+import { FeedbackState, FormField, MutationFeedback } from "./admin-primitives";
+import type { AdminMutationState } from "./admin-query-state";
 import styles from "./admin.module.css";
 
 export type PilotGateStatus = "PENDING" | "APPROVED" | "BLOCKED";
@@ -47,7 +48,7 @@ export function PilotReadinessPanel({
   readiness,
   loadError,
   drafts,
-  savingGate,
+  mutations,
   onDraftChange,
   onSave,
   onExport,
@@ -56,14 +57,14 @@ export function PilotReadinessPanel({
   readiness: PilotReadiness | null;
   loadError?: string;
   drafts: Record<string, PilotDraft>;
-  savingGate: string | null;
+  mutations: Record<string, AdminMutationState>;
   onDraftChange: (gate: string, field: keyof PilotDraft, value: string) => void;
   onSave: (gate: PilotGate) => void;
   onExport: () => void;
   onRetry: () => void;
 }) {
   return (
-    <section className={styles.sectionCard} aria-labelledby="pilot-readiness-title" aria-busy={Boolean(savingGate) || (!readiness && !loadError)}>
+    <section className={styles.sectionCard} aria-labelledby="pilot-readiness-title" aria-busy={!readiness && !loadError}>
       <div className={styles.sectionTitle}>
         <div>
           <span className={styles.kicker}>Gate operacional</span>
@@ -105,6 +106,7 @@ export function PilotReadinessPanel({
           <div className={styles.pilotGateGrid}>
             {readiness.gates.map((gate) => {
               const draft = drafts[gate.key] ?? { status: gate.status, reason: gate.reason ?? "", evidenceReference: gate.evidenceReference ?? "" };
+              const mutation = mutations[gate.key] ?? { phase: "idle" };
               const reasonError = draft.reason.trim().length < 10
                 ? "Use pelo menos 10 caracteres."
                 : undefined;
@@ -129,8 +131,9 @@ export function PilotReadinessPanel({
                     <input maxLength={1000} value={draft.evidenceReference} onChange={(event) => onDraftChange(gate.key, "evidenceReference", event.target.value)} placeholder="Ticket, parecer, relatório ou URL interna" />
                   </FormField>
                   {gate.decidedAt && <small>Última decisão em {formatDate(gate.decidedAt)} por {gate.decidedBy?.name || gate.decidedBy?.email || "administrador removido"}.</small>}
-                  <button type="button" className={styles.secondaryButton} disabled={savingGate === gate.key || Boolean(reasonError) || Boolean(evidenceError)} onClick={() => onSave(gate)}>
-                    {savingGate === gate.key ? "Registrando…" : "Registrar decisão"}
+                  <MutationFeedback state={mutation} pendingTitle="Registrando gate" errorTitle="Não foi possível registrar o gate" fallbackError="Não foi possível registrar o gate." className={styles.readinessNotice} />
+                  <button type="button" className={styles.secondaryButton} disabled={mutation.phase === "pending" || Boolean(reasonError) || Boolean(evidenceError)} onClick={() => onSave(gate)}>
+                    {mutation.phase === "pending" ? "Registrando…" : "Registrar decisão"}
                   </button>
                   <details className={styles.pilotGateHistory}>
                     <summary>Histórico auditável ({gate.auditLogs.length})</summary>

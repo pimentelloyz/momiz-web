@@ -15,3 +15,21 @@ export async function runAdminQuery<T>(
     return { phase: "error", error };
   }
 }
+
+export type AdminMutationState =
+  | { phase: "idle" }
+  | { phase: "pending" }
+  | { phase: "error"; error: unknown }
+  | { phase: "success"; message: string };
+
+export async function runAdminMutation(
+  operation: () => Promise<void>,
+  successMessage: string,
+): Promise<AdminMutationState> {
+  try {
+    await operation();
+    return { phase: "success", message: successMessage };
+  } catch (error) {
+    return { phase: "error", error };
+  }
+}

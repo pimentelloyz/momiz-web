@@ -7,6 +7,8 @@ import {
   useId,
 } from "react";
 import type { ReactElement, ReactNode } from "react";
+import { adminErrorMessage } from "./admin-api-client.ts";
+import type { AdminMutationState } from "./admin-query-state.ts";
 
 type FeedbackVariant = "loading" | "empty" | "error" | "denied" | "success";
 
@@ -37,6 +39,44 @@ export function FeedbackState({
     createElement("span", null, description),
     action,
   );
+}
+
+export function MutationFeedback({
+  state,
+  pendingTitle,
+  errorTitle,
+  fallbackError,
+  className,
+}: {
+  state: AdminMutationState;
+  pendingTitle: string;
+  errorTitle: string;
+  fallbackError: string;
+  className?: string;
+}) {
+  if (state.phase === "idle") return null;
+  if (state.phase === "pending") {
+    return createElement(FeedbackState, {
+      variant: "loading",
+      title: pendingTitle,
+      description: "Aguarde a confirmação e a atualização dos dados.",
+      className,
+    });
+  }
+  if (state.phase === "error") {
+    return createElement(FeedbackState, {
+      variant: "error",
+      title: errorTitle,
+      description: adminErrorMessage(state.error, fallbackError),
+      className,
+    });
+  }
+  return createElement(FeedbackState, {
+    variant: "success",
+    title: "Operação concluída",
+    description: state.message,
+    className,
+  });
 }
 
 type FieldControlProps = {

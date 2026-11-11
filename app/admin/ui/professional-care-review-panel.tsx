@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { adminApi, adminErrorMessage, isAdminSessionExpired, jsonRequest } from "./admin-api-client";
-import { FeedbackState } from "./admin-primitives";
-import { AdminQueryState, runAdminQuery } from "./admin-query-state";
+import { FeedbackState, MutationFeedback } from "./admin-primitives";
+import { AdminMutationState, AdminQueryState, runAdminMutation, runAdminQuery } from "./admin-query-state";
 import {
   PilotDraft,
   PilotGate,
@@ -154,20 +154,26 @@ export function ProfessionalCareReviewPanel({
   const [profilesState, setProfilesState] = useState<AdminQueryState<ProfessionalProfile[]>>({ phase: "loading" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reason, setReason] = useState("");
-  const [reviewing, setReviewing] = useState(false);
+  const [reviewMutation, setReviewMutation] = useState<AdminMutationState>({ phase: "idle" });
   const [openingCredential, setOpeningCredential] = useState<string | null>(null);
   const [metricsState, setMetricsState] = useState<AdminQueryState<Operations>>({ phase: "loading" });
   const [reportStatus, setReportStatus] = useState<CommunicationReportStatus>("OPEN");
   const [reportsState, setReportsState] = useState<AdminQueryState<CommunicationReport[]>>({ phase: "loading" });
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [resolutionNote, setResolutionNote] = useState("");
-  const [resolvingReport, setResolvingReport] = useState(false);
+  const [reportMutation, setReportMutation] = useState<AdminMutationState>({ phase: "idle" });
   const [pilotReadinessState, setPilotReadinessState] = useState<AdminQueryState<PilotReadiness>>({ phase: "loading" });
   const [pilotDrafts, setPilotDrafts] = useState<Record<string, PilotDraft>>({});
-  const [savingPilotGate, setSavingPilotGate] = useState<string | null>(null);
+  const [pilotMutations, setPilotMutations] = useState<Record<string, AdminMutationState>>({});
 
-  const profiles = profilesState.phase === "ready" || profilesState.phase === "empty" ? profilesState.data : [];
-  const reports = reportsState.phase === "ready" || reportsState.phase === "empty" ? reportsState.data : [];
+  const profiles = useMemo(
+    () => profilesState.phase === "ready" || profilesState.phase === "empty" ? profilesState.data : [],
+    [profilesState],
+  );
+  const reports = useMemo(
+    () => reportsState.phase === "ready" || reportsState.phase === "empty" ? reportsState.data : [],
+    [reportsState],
+  );
   const pilotReadiness = pilotReadinessState.phase === "ready" || pilotReadinessState.phase === "empty" ? pilotReadinessState.data : null;
 
   const selected = useMemo(
@@ -196,15 +202,19 @@ export function ProfessionalCareReviewPanel({
     }, (items) => items.length === 0);
     if (next.phase === "error" && isAdminSessionExpired(next.error)) {
       onSessionExpired();
-      return;
+      return next;
     }
     if (next.phase === "ready" || next.phase === "empty") {
       setSelectedId((current) => next.data.some((profile) => profile.id === current) ? current : next.data[0]?.id ?? null);
     }
     setProfilesState(next);
+    return next;
   }, [onSessionExpired, status]);
 
-  useEffect(() => { void loadProfiles(); }, [loadProfiles]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadProfiles(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadProfiles]);
 
   const loadMetrics = useCallback(async () => {
     setMetricsState({ phase: "loading" });
@@ -237,12 +247,16 @@ export function ProfessionalCareReviewPanel({
     }, (metrics) => Object.values(metrics).every((value) => value === 0));
     if (next.phase === "error" && isAdminSessionExpired(next.error)) {
       onSessionExpired();
-      return;
+      return next;
     }
     setMetricsState(next);
+    return next;
   }, [onSessionExpired]);
 
-  useEffect(() => { void loadMetrics(); }, [loadMetrics]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadMetrics(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadMetrics]);
 
   const applyPilotReadiness = useCallback((readiness: PilotReadiness) => {
     setPilotReadinessState({ phase: readiness.gates.length === 0 ? "empty" : "ready", data: readiness });
@@ -256,30 +270,35 @@ export function ProfessionalCareReviewPanel({
     ])));
   }, []);
 
-  const loadPilotReadiness = useCallback(async () => {
-    setPilotReadinessState({ phase: "loading" });
+  const loadPilotReadiness = useCallback(async (showLoading = true) => {
+    if (showLoading) setPilotReadinessState({ phase: "loading" });
     const next = await runAdminQuery(async () => {
       const data = await adminApi("care/pilot-readiness") as { readiness: PilotReadiness };
       return data.readiness;
     }, (readiness) => readiness.gates.length === 0);
     if (next.phase === "error" && isAdminSessionExpired(next.error)) {
       onSessionExpired();
-      return;
+      return next;
     }
     if (next.phase === "ready" || next.phase === "empty") {
       applyPilotReadiness(next.data);
-      return;
+      return next;
     }
     setPilotReadinessState(next);
+    return next;
   }, [applyPilotReadiness, onSessionExpired]);
 
-  useEffect(() => { void loadPilotReadiness(); }, [loadPilotReadiness]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadPilotReadiness(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadPilotReadiness]);
 
   function updatePilotDraft(
     gate: string,
     field: "status" | "reason" | "evidenceReference",
     value: string,
   ) {
+    setPilotMutations((current) => ({ ...current, [gate]: { phase: "idle" } }));
     setPilotDrafts((current) => ({
       ...current,
       [gate]: {
@@ -292,15 +311,15 @@ export function ProfessionalCareReviewPanel({
   async function savePilotGate(gate: PilotGate) {
     const draft = pilotDrafts[gate.key];
     if (!draft || draft.reason.trim().length < 10) {
-      onMessage("Registre uma justificativa com pelo menos 10 caracteres.");
+      setPilotMutations((current) => ({ ...current, [gate.key]: { phase: "error", error: new Error("Registre uma justificativa com pelo menos 10 caracteres.") } }));
       return;
     }
     if (draft.status === "APPROVED" && !draft.evidenceReference.trim()) {
-      onMessage("Informe a referência da evidência antes de aprovar o gate.");
+      setPilotMutations((current) => ({ ...current, [gate.key]: { phase: "error", error: new Error("Informe a referência da evidência antes de aprovar o gate.") } }));
       return;
     }
-    setSavingPilotGate(gate.key);
-    try {
+    setPilotMutations((current) => ({ ...current, [gate.key]: { phase: "pending" } }));
+    const result = await runAdminMutation(async () => {
       await adminApi(
         `care/pilot-readiness/${gate.key}`,
         jsonRequest("PATCH", {
@@ -309,14 +328,14 @@ export function ProfessionalCareReviewPanel({
           evidenceReference: draft.evidenceReference.trim() || null,
         }),
       );
-      await loadPilotReadiness();
-      onMessage("Gate registrado com trilha de auditoria. Nenhum rollout foi ativado.");
-    } catch (error) {
-      if (isAdminSessionExpired(error)) onSessionExpired();
-      else onMessage(adminErrorMessage(error, "Não foi possível registrar o gate."));
-    } finally {
-      setSavingPilotGate(null);
+      const refreshed = await loadPilotReadiness(false);
+      if (refreshed.phase === "error") throw refreshed.error;
+    }, "Gate registrado com trilha de auditoria. Nenhum rollout foi ativado.");
+    if (result.phase === "error" && isAdminSessionExpired(result.error)) {
+      onSessionExpired();
+      return;
     }
+    setPilotMutations((current) => ({ ...current, [gate.key]: result }));
   }
 
   function exportPilotAudit() {
@@ -355,7 +374,7 @@ export function ProfessionalCareReviewPanel({
     }, (items) => items.length === 0);
     if (next.phase === "error" && isAdminSessionExpired(next.error)) {
       onSessionExpired();
-      return;
+      return next;
     }
     if (next.phase === "ready" || next.phase === "empty") {
       setSelectedReportId((current) =>
@@ -365,70 +384,74 @@ export function ProfessionalCareReviewPanel({
       );
     }
     setReportsState(next);
+    return next;
   }, [onSessionExpired, reportStatus]);
 
-  useEffect(() => { void loadReports(); }, [loadReports]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadReports(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadReports]);
 
   async function resolveReport(decision: "resolve" | "dismiss") {
     if (!selectedReport) return;
     if (!resolutionNote.trim()) {
-      onMessage("Registre a análise e as medidas tomadas antes de encerrar a denúncia.");
+      setReportMutation({ phase: "error", error: new Error("Registre a análise e as medidas tomadas antes de encerrar a denúncia.") });
       return;
     }
-    setResolvingReport(true);
-    try {
+    setReportMutation({ phase: "pending" });
+    const successMessage = decision === "resolve" ? "Denúncia resolvida e auditada." : "Denúncia descartada com justificativa.";
+    const result = await runAdminMutation(async () => {
       await adminApi(
         `care/communication-reports/${selectedReport.id}`,
         jsonRequest("PATCH", { decision, resolutionNote: resolutionNote.trim() }),
       );
-      onMessage(decision === "resolve" ? "Denúncia resolvida e auditada." : "Denúncia descartada com justificativa.");
       setResolutionNote("");
-      await loadReports();
-      await loadMetrics();
-    } catch (error) {
-      if (isAdminSessionExpired(error)) onSessionExpired();
-      else onMessage(adminErrorMessage(error, "Não foi possível encerrar a denúncia."));
-    } finally {
-      setResolvingReport(false);
+      const reportsRefresh = await loadReports();
+      if (reportsRefresh.phase === "error") throw reportsRefresh.error;
+      const metricsRefresh = await loadMetrics();
+      if (metricsRefresh.phase === "error") throw metricsRefresh.error;
+    }, successMessage);
+    if (result.phase === "error" && isAdminSessionExpired(result.error)) {
+      onSessionExpired();
+      return;
     }
+    setReportMutation(result);
   }
 
   async function review(decision: "verify" | "request_correction" | "reject" | "suspend") {
     if (!selected) return;
     if (decision !== "verify" && !reason.trim()) {
-      onMessage("Informe o motivo antes de solicitar correção, rejeitar ou suspender.");
+      setReviewMutation({ phase: "error", error: new Error("Informe o motivo antes de solicitar correção, rejeitar ou suspender.") });
       return;
     }
-    setReviewing(true);
-    try {
+    setReviewMutation({ phase: "pending" });
+    const successMessage = decision === "verify"
+      ? isRenewalReview
+        ? "Renovação aprovada. A nova credencial assumiu a vigência sem interromper os vínculos."
+        : "Perfil verificado e vínculos pendentes ativados."
+      : decision === "request_correction"
+        ? isRenewalReview
+          ? "Correção solicitada. A credencial vigente e os vínculos permanecem ativos."
+          : "Correção solicitada ao profissional."
+        : decision === "suspend"
+          ? "Perfil suspenso e vínculos ativos pausados."
+          : "Cadastro profissional rejeitado.";
+    const result = await runAdminMutation(async () => {
       await adminApi(
         `care/profiles/${selected.id}/review`,
         jsonRequest("POST", { decision, reason: reason.trim() || null }),
       );
-      onMessage(
-        decision === "verify"
-          ? isRenewalReview
-            ? "Renovação aprovada. A nova credencial assumiu a vigência sem interromper os vínculos."
-            : "Perfil verificado e vínculos pendentes ativados."
-          : decision === "request_correction"
-            ? isRenewalReview
-              ? "Correção solicitada. A credencial vigente e os vínculos permanecem ativos."
-              : "Correção solicitada ao profissional."
-            : decision === "suspend"
-              ? "Perfil suspenso e vínculos ativos pausados."
-              : "Cadastro profissional rejeitado.",
-      );
       setReason("");
-      await loadProfiles();
-    } catch (error) {
-      if (isAdminSessionExpired(error)) {
-        onSessionExpired();
-      } else {
-        onMessage(adminErrorMessage(error, "Não foi possível concluir a análise."));
-      }
-    } finally {
-      setReviewing(false);
+      const profilesRefresh = await loadProfiles();
+      if (profilesRefresh.phase === "error") throw profilesRefresh.error;
+      const metricsRefresh = await loadMetrics();
+      if (metricsRefresh.phase === "error") throw metricsRefresh.error;
+    }, successMessage);
+    if (result.phase === "error" && isAdminSessionExpired(result.error)) {
+      onSessionExpired();
+      return;
     }
+    setReviewMutation(result);
   }
 
   async function openCredential(credential: Credential) {
@@ -455,7 +478,7 @@ export function ProfessionalCareReviewPanel({
         readiness={pilotReadiness}
         loadError={pilotReadinessState.phase === "error" ? adminErrorMessage(pilotReadinessState.error, "Não foi possível carregar os gates do piloto.") : undefined}
         drafts={pilotDrafts}
-        savingGate={savingPilotGate}
+        mutations={pilotMutations}
         onDraftChange={updatePilotDraft}
         onSave={(gate) => void savePilotGate(gate)}
         onExport={exportPilotAudit}
@@ -521,6 +544,7 @@ export function ProfessionalCareReviewPanel({
             </select>
           </label>
         </div>
+        <MutationFeedback state={reportMutation} pendingTitle="Registrando decisão" errorTitle="Não foi possível encerrar a denúncia" fallbackError="Não foi possível encerrar a denúncia." className={styles.feedback} />
         {reportsState.phase === "loading" ? (
           <FeedbackState variant="loading" title="Carregando denúncias" description="Consultando a fila de moderação selecionada." className={styles.feedback} />
         ) : reportsState.phase === "error" ? (
@@ -540,7 +564,7 @@ export function ProfessionalCareReviewPanel({
                 <button
                   key={report.id}
                   className={selectedReport?.id === report.id ? styles.reviewSelected : styles.reviewItem}
-                  onClick={() => { setSelectedReportId(report.id); setResolutionNote(""); }}
+                  onClick={() => { setSelectedReportId(report.id); setResolutionNote(""); setReportMutation({ phase: "idle" }); }}
                 >
                   <strong>{reportCategoryLabels[report.category] ?? report.category}</strong>
                   <span>{report.patient.name} · {report.relationship.professionalProfile.displayName}</span>
@@ -575,8 +599,8 @@ export function ProfessionalCareReviewPanel({
                       <textarea value={resolutionNote} onChange={(event) => setResolutionNote(event.target.value)} rows={4} maxLength={2000} />
                     </label>
                     <div className={styles.actions}>
-                      <button disabled={resolvingReport} className={styles.secondaryButton} onClick={() => void resolveReport("dismiss")}>Descartar com justificativa</button>
-                      <button disabled={resolvingReport} className={styles.primaryButton} onClick={() => void resolveReport("resolve")}>{resolvingReport ? "Salvando…" : "Marcar como resolvida"}</button>
+                      <button disabled={reportMutation.phase === "pending"} className={styles.secondaryButton} onClick={() => void resolveReport("dismiss")}>Descartar com justificativa</button>
+                      <button disabled={reportMutation.phase === "pending"} className={styles.primaryButton} onClick={() => void resolveReport("resolve")}>{reportMutation.phase === "pending" ? "Salvando…" : "Marcar como resolvida"}</button>
                     </div>
                   </div>
                 ) : (
@@ -611,7 +635,7 @@ export function ProfessionalCareReviewPanel({
               <button
                 key={profile.id}
                 className={selected?.id === profile.id ? styles.reviewSelected : styles.reviewItem}
-                onClick={() => { setSelectedId(profile.id); setReason(""); }}
+                onClick={() => { setSelectedId(profile.id); setReason(""); setReviewMutation({ phase: "idle" }); }}
               >
                 <strong>{profile.displayName}</strong>
                 <span>{professionLabels[profile.primaryProfession] ?? profile.primaryProfession}</span>
@@ -622,6 +646,7 @@ export function ProfessionalCareReviewPanel({
         </aside>
 
         <main className={styles.sectionCard}>
+          <MutationFeedback state={reviewMutation} pendingTitle="Registrando análise" errorTitle="Não foi possível concluir a análise" fallbackError="Não foi possível concluir a análise." className={styles.feedback} />
           {profilesState.phase === "error" ? (
             <div className={styles.empty}><h3>Detalhes indisponíveis</h3><p>Recarregue a fila de cadastros para consultar perfil e credenciais.</p></div>
           ) : profilesState.phase === "loading" ? (
@@ -693,9 +718,9 @@ export function ProfessionalCareReviewPanel({
                     <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} placeholder="Obrigatório para correção ou rejeição" />
                   </label>
                   <div className={styles.actions}>
-                    <button disabled={reviewing} className={styles.dangerButton} onClick={() => void review("reject")}>Rejeitar</button>
-                    <button disabled={reviewing} className={styles.secondaryButton} onClick={() => void review("request_correction")}>Solicitar correção</button>
-                    <button disabled={reviewing} className={styles.primaryButton} onClick={() => void review("verify")}>{reviewing ? "Salvando…" : isRenewalReview ? "Aprovar renovação" : "Verificar perfil"}</button>
+                    <button disabled={reviewMutation.phase === "pending"} className={styles.dangerButton} onClick={() => void review("reject")}>Rejeitar</button>
+                    <button disabled={reviewMutation.phase === "pending"} className={styles.secondaryButton} onClick={() => void review("request_correction")}>Solicitar correção</button>
+                    <button disabled={reviewMutation.phase === "pending"} className={styles.primaryButton} onClick={() => void review("verify")}>{reviewMutation.phase === "pending" ? "Salvando…" : isRenewalReview ? "Aprovar renovação" : "Verificar perfil"}</button>
                   </div>
                 </div>
               )}
@@ -706,7 +731,7 @@ export function ProfessionalCareReviewPanel({
                     <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} placeholder="Descreva o motivo operacional ou de segurança" />
                   </label>
                   <div className={styles.actions}>
-                    <button disabled={reviewing} className={styles.dangerButton} onClick={() => void review("suspend")}>Suspender perfil e pausar vínculos</button>
+                    <button disabled={reviewMutation.phase === "pending"} className={styles.dangerButton} onClick={() => void review("suspend")}>Suspender perfil e pausar vínculos</button>
                   </div>
                 </div>
               )}

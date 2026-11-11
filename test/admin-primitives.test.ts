@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import test from "node:test";
-import { FeedbackState, FormField } from "../app/admin/ui/admin-primitives.ts";
+import { FeedbackState, FormField, MutationFeedback } from "../app/admin/ui/admin-primitives.ts";
+import { AdminApiError } from "../app/admin/ui/admin-api-client.ts";
 
 test("feedback variants announce loading, success and actionable failures", () => {
   const loading = renderToStaticMarkup(createElement(FeedbackState, {
@@ -56,4 +57,33 @@ test("form field associates label, help and persistent error with its control", 
   assert.match(markup, /aria-describedby="review-reason-description review-reason-error"/);
   assert.match(markup, /aria-invalid="true"/);
   assert.match(markup, /id="review-reason-error" role="alert"/);
+});
+
+test("mutation feedback announces pending, correlated error and authoritative success", () => {
+  const pending = renderToStaticMarkup(createElement(MutationFeedback, {
+    state: { phase: "pending" },
+    pendingTitle: "Registrando decisão",
+    errorTitle: "Falha na decisão",
+    fallbackError: "Não foi possível registrar.",
+  }));
+  assert.match(pending, /role="status"/);
+  assert.match(pending, /aria-busy="true"/);
+
+  const failure = renderToStaticMarkup(createElement(MutationFeedback, {
+    state: { phase: "error", error: new AdminApiError({ message: "Conflito.", code: "CONFLICT", requestId: "req-mutation", status: 409 }) },
+    pendingTitle: "Registrando decisão",
+    errorTitle: "Falha na decisão",
+    fallbackError: "Não foi possível registrar.",
+  }));
+  assert.match(failure, /role="alert"/);
+  assert.match(failure, /Identificador: req-mutation/);
+
+  const success = renderToStaticMarkup(createElement(MutationFeedback, {
+    state: { phase: "success", message: "Fonte atualizada." },
+    pendingTitle: "Registrando decisão",
+    errorTitle: "Falha na decisão",
+    fallbackError: "Não foi possível registrar.",
+  }));
+  assert.match(success, /role="status"/);
+  assert.match(success, /Fonte atualizada/);
 });

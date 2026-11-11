@@ -10,10 +10,10 @@
 - Verificações: não definido.
 - Dependências de API/app: habilitação coordenada das flags correspondentes na
   API antes de qualquer rollout remoto do portal contextual.
-- Próximo passo: validar as consultas localizadas em Preview autenticado ou
-  localizar falhas de mutação quando solicitado.
+- Próximo passo: validar o review profissional em Preview autenticado ou
+  localizar o download efêmero de credencial quando solicitado.
 - Último checkpoint:
-  `docs/work/completed/2026-11-11-feedback-local-prontidao-admin.md`.
+  `docs/work/completed/2026-11-11-feedback-local-mutacoes-care-admin.md`.
 
 ```markdown
 - Status:
