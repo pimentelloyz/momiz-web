@@ -162,12 +162,13 @@ export function ProfessionalCareReviewPanel({
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [resolutionNote, setResolutionNote] = useState("");
   const [resolvingReport, setResolvingReport] = useState(false);
-  const [pilotReadiness, setPilotReadiness] = useState<PilotReadiness | null>(null);
+  const [pilotReadinessState, setPilotReadinessState] = useState<AdminQueryState<PilotReadiness>>({ phase: "loading" });
   const [pilotDrafts, setPilotDrafts] = useState<Record<string, PilotDraft>>({});
   const [savingPilotGate, setSavingPilotGate] = useState<string | null>(null);
 
   const profiles = profilesState.phase === "ready" || profilesState.phase === "empty" ? profilesState.data : [];
   const reports = reportsState.phase === "ready" || reportsState.phase === "empty" ? reportsState.data : [];
+  const pilotReadiness = pilotReadinessState.phase === "ready" || pilotReadinessState.phase === "empty" ? pilotReadinessState.data : null;
 
   const selected = useMemo(
     () => profiles.find((profile) => profile.id === selectedId) ?? profiles[0] ?? null,
@@ -244,7 +245,7 @@ export function ProfessionalCareReviewPanel({
   useEffect(() => { void loadMetrics(); }, [loadMetrics]);
 
   const applyPilotReadiness = useCallback((readiness: PilotReadiness) => {
-    setPilotReadiness(readiness);
+    setPilotReadinessState({ phase: readiness.gates.length === 0 ? "empty" : "ready", data: readiness });
     setPilotDrafts(Object.fromEntries(readiness.gates.map((gate) => [
       gate.key,
       {
@@ -255,19 +256,24 @@ export function ProfessionalCareReviewPanel({
     ])));
   }, []);
 
-  useEffect(() => {
-    let active = true;
-    adminApi("care/pilot-readiness")
-      .then((data) => {
-        if (active) applyPilotReadiness((data as { readiness: PilotReadiness }).readiness);
-      })
-      .catch((error: unknown) => {
-        if (!active) return;
-        if (isAdminSessionExpired(error)) onSessionExpired();
-        else onMessage(adminErrorMessage(error, "Não foi possível carregar os gates do piloto."));
-      });
-    return () => { active = false; };
-  }, [applyPilotReadiness, onMessage, onSessionExpired]);
+  const loadPilotReadiness = useCallback(async () => {
+    setPilotReadinessState({ phase: "loading" });
+    const next = await runAdminQuery(async () => {
+      const data = await adminApi("care/pilot-readiness") as { readiness: PilotReadiness };
+      return data.readiness;
+    }, (readiness) => readiness.gates.length === 0);
+    if (next.phase === "error" && isAdminSessionExpired(next.error)) {
+      onSessionExpired();
+      return;
+    }
+    if (next.phase === "ready" || next.phase === "empty") {
+      applyPilotReadiness(next.data);
+      return;
+    }
+    setPilotReadinessState(next);
+  }, [applyPilotReadiness, onSessionExpired]);
+
+  useEffect(() => { void loadPilotReadiness(); }, [loadPilotReadiness]);
 
   function updatePilotDraft(
     gate: string,
@@ -295,15 +301,15 @@ export function ProfessionalCareReviewPanel({
     }
     setSavingPilotGate(gate.key);
     try {
-      const data = (await adminApi(
+      await adminApi(
         `care/pilot-readiness/${gate.key}`,
         jsonRequest("PATCH", {
           status: draft.status,
           reason: draft.reason.trim(),
           evidenceReference: draft.evidenceReference.trim() || null,
         }),
-      )) as { readiness: PilotReadiness };
-      applyPilotReadiness(data.readiness);
+      );
+      await loadPilotReadiness();
       onMessage("Gate registrado com trilha de auditoria. Nenhum rollout foi ativado.");
     } catch (error) {
       if (isAdminSessionExpired(error)) onSessionExpired();
@@ -447,11 +453,13 @@ export function ProfessionalCareReviewPanel({
     <div className={styles.careReviewPanel}>
       <PilotReadinessPanel
         readiness={pilotReadiness}
+        loadError={pilotReadinessState.phase === "error" ? adminErrorMessage(pilotReadinessState.error, "Não foi possível carregar os gates do piloto.") : undefined}
         drafts={pilotDrafts}
         savingGate={savingPilotGate}
         onDraftChange={updatePilotDraft}
         onSave={(gate) => void savePilotGate(gate)}
         onExport={exportPilotAudit}
+        onRetry={() => void loadPilotReadiness()}
       />
       <section className={styles.sectionCard}>
         <div className={styles.sectionTitle}>

@@ -68,3 +68,37 @@ test("localized queues retry only the failed idempotent source", async () => {
   assert.equal(profileReads, 2);
   assert.equal(reportReads, 1);
 });
+
+test("pilot readiness retries independently and preserves the canonical error", async () => {
+  let readinessReads = 0;
+  let metricReads = 0;
+  const readReadiness = async () => {
+    readinessReads += 1;
+    if (readinessReads === 1) throw new AdminApiError({
+      message: "Prontidão indisponível.",
+      code: "PILOT_READINESS_UNAVAILABLE",
+      requestId: "req-readiness-retry",
+      status: 503,
+    });
+    return { ready: false, gates: [{ key: "SECURITY_PENTEST" }] };
+  };
+  const readMetrics = async () => {
+    metricReads += 1;
+    return { active: 2 };
+  };
+
+  const [readinessFailed, metricsReady] = await Promise.all([
+    runAdminQuery(readReadiness),
+    runAdminQuery(readMetrics),
+  ]);
+  assert.equal(readinessFailed.phase, "error");
+  if (readinessFailed.phase !== "error") assert.fail("A prontidão deveria falhar isoladamente.");
+  assert.ok(readinessFailed.error instanceof AdminApiError);
+  assert.equal(readinessFailed.error.requestId, "req-readiness-retry");
+  assert.equal(metricsReady.phase, "ready");
+
+  const readinessRetried = await runAdminQuery(readReadiness);
+  assert.equal(readinessRetried.phase, "ready");
+  assert.equal(readinessReads, 2);
+  assert.equal(metricReads, 1);
+});

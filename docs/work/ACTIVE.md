@@ -10,10 +10,10 @@
 - Verificações: não definido.
 - Dependências de API/app: habilitação coordenada das flags correspondentes na
   API antes de qualquer rollout remoto do portal contextual.
-- Próximo passo: localizar o erro/retry da prontidão do piloto ou validar o lote
-  em Preview autenticado quando solicitado.
+- Próximo passo: validar as consultas localizadas em Preview autenticado ou
+  localizar falhas de mutação quando solicitado.
 - Último checkpoint:
-  `docs/work/completed/2026-11-11-feedback-local-filas-admin.md`.
+  `docs/work/completed/2026-11-11-feedback-local-prontidao-admin.md`.
 
 ```markdown
 - Status:

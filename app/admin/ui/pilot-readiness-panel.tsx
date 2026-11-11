@@ -45,21 +45,25 @@ function formatDate(value: string) {
 
 export function PilotReadinessPanel({
   readiness,
+  loadError,
   drafts,
   savingGate,
   onDraftChange,
   onSave,
   onExport,
+  onRetry,
 }: {
   readiness: PilotReadiness | null;
+  loadError?: string;
   drafts: Record<string, PilotDraft>;
   savingGate: string | null;
   onDraftChange: (gate: string, field: keyof PilotDraft, value: string) => void;
   onSave: (gate: PilotGate) => void;
   onExport: () => void;
+  onRetry: () => void;
 }) {
   return (
-    <section className={styles.sectionCard} aria-labelledby="pilot-readiness-title" aria-busy={Boolean(savingGate)}>
+    <section className={styles.sectionCard} aria-labelledby="pilot-readiness-title" aria-busy={Boolean(savingGate) || (!readiness && !loadError)}>
       <div className={styles.sectionTitle}>
         <div>
           <span className={styles.kicker}>Gate operacional</span>
@@ -78,7 +82,15 @@ export function PilotReadinessPanel({
         )}
       </div>
 
-      {!readiness ? (
+      {loadError ? (
+        <FeedbackState
+          variant="error"
+          title="Não foi possível carregar a prontidão"
+          description={loadError}
+          action={<button type="button" className={styles.secondaryButton} onClick={onRetry}>Tentar novamente</button>}
+          className={styles.readinessNotice}
+        />
+      ) : !readiness ? (
         <FeedbackState variant="loading" title="Carregando prontidão" description="Consultando gates e histórico auditável." className={styles.readinessNotice} />
       ) : readiness.gates.length === 0 ? (
         <FeedbackState variant="empty" title="Nenhum gate configurado" description="O piloto permanece bloqueado até que os gates sejam publicados." className={styles.readinessNotice} />
