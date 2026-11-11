@@ -11,7 +11,7 @@
 - Dependências de API/app: nenhuma tarefa ativa.
 - Próximo passo: aguardar novo pacote de trabalho.
 - Último checkpoint:
-  `docs/work/completed/2026-11-11-paginacao-fila-perfis-admin.md`.
+  `docs/work/completed/2026-11-11-paginacao-fila-denuncias-admin.md`.
 
 ```markdown
 - Status:

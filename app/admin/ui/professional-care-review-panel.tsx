@@ -6,6 +6,7 @@ import { FeedbackState, MutationFeedback } from "./admin-primitives";
 import { AdminMutationState, AdminQueryState, runAdminMutation, runAdminQuery } from "./admin-query-state";
 import { readCredentialDownloadUrl } from "./admin-credential-download";
 import { AdminProfilePage, mergeAdminProfilePages, readAdminProfilePage } from "./admin-profile-pagination";
+import { AdminReportPage, mergeAdminReportPages, readAdminReportPage } from "./admin-report-pagination";
 import {
   PilotDraft,
   PilotGate,
@@ -161,7 +162,10 @@ export function ProfessionalCareReviewPanel({
   const [credentialMutations, setCredentialMutations] = useState<Record<string, AdminMutationState>>({});
   const [metricsState, setMetricsState] = useState<AdminQueryState<Operations>>({ phase: "loading" });
   const [reportStatus, setReportStatus] = useState<CommunicationReportStatus>("OPEN");
-  const [reportsState, setReportsState] = useState<AdminQueryState<CommunicationReport[]>>({ phase: "loading" });
+  const [reportsState, setReportsState] = useState<AdminQueryState<AdminReportPage<CommunicationReport>>>({ phase: "loading" });
+  const [reportsMoreState, setReportsMoreState] = useState<AdminQueryState<AdminReportPage<CommunicationReport>> | { phase: "idle" }>({ phase: "idle" });
+  const activeReportStatusRef = useRef(reportStatus);
+  const reportRequestVersionRef = useRef(0);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [resolutionNote, setResolutionNote] = useState("");
   const [reportMutation, setReportMutation] = useState<AdminMutationState>({ phase: "idle" });
@@ -173,12 +177,16 @@ export function ProfessionalCareReviewPanel({
     activeProfileStatusRef.current = status;
   }, [status]);
 
+  useEffect(() => {
+    activeReportStatusRef.current = reportStatus;
+  }, [reportStatus]);
+
   const profiles = useMemo(
     () => profilesState.phase === "ready" || profilesState.phase === "empty" ? profilesState.data.items : [],
     [profilesState],
   );
   const reports = useMemo(
-    () => reportsState.phase === "ready" || reportsState.phase === "empty" ? reportsState.data : [],
+    () => reportsState.phase === "ready" || reportsState.phase === "empty" ? reportsState.data.items : [],
     [reportsState],
   );
   const pilotReadiness = pilotReadinessState.phase === "ready" || pilotReadinessState.phase === "empty" ? pilotReadinessState.data : null;
@@ -402,27 +410,57 @@ export function ProfessionalCareReviewPanel({
   }
 
   const loadReports = useCallback(async () => {
+    const requestedStatus = reportStatus;
+    const requestVersion = reportRequestVersionRef.current + 1;
+    reportRequestVersionRef.current = requestVersion;
     setReportsState({ phase: "loading" });
+    setReportsMoreState({ phase: "idle" });
     const next = await runAdminQuery(async () => {
-      const data = (await adminApi(
-        `care/communication-reports?status=${reportStatus}`,
-      )) as { reports: CommunicationReport[] };
-      return data.reports;
-    }, (items) => items.length === 0);
+      const query = new URLSearchParams({ status: requestedStatus, limit: "50" });
+      return readAdminReportPage<CommunicationReport>(await adminApi(`care/communication-reports?${query}`));
+    }, (page) => page.items.length === 0);
+    if (activeReportStatusRef.current !== requestedStatus || reportRequestVersionRef.current !== requestVersion) return next;
     if (next.phase === "error" && isAdminSessionExpired(next.error)) {
       onSessionExpired();
       return next;
     }
     if (next.phase === "ready" || next.phase === "empty") {
       setSelectedReportId((current) =>
-        next.data.some((report) => report.id === current)
+        next.data.items.some((report) => report.id === current)
           ? current
-          : next.data[0]?.id ?? null,
+          : next.data.items[0]?.id ?? null,
       );
     }
     setReportsState(next);
     return next;
   }, [onSessionExpired, reportStatus]);
+
+  const loadMoreReports = useCallback(async () => {
+    if (reportsState.phase !== "ready" || !reportsState.data.nextCursor || reportsMoreState.phase === "loading") return;
+    const requestedStatus = reportStatus;
+    const cursor = reportsState.data.nextCursor;
+    const requestVersion = reportRequestVersionRef.current;
+    setReportsMoreState({ phase: "loading" });
+    const next = await runAdminQuery(async () => {
+      const query = new URLSearchParams({ status: requestedStatus, limit: "50", cursor });
+      return readAdminReportPage<CommunicationReport>(await adminApi(`care/communication-reports?${query}`));
+    }, () => false);
+    if (activeReportStatusRef.current !== requestedStatus || reportRequestVersionRef.current !== requestVersion) return;
+    if (next.phase === "error") {
+      if (isAdminSessionExpired(next.error)) onSessionExpired();
+      setReportsMoreState(next);
+      return;
+    }
+    if (next.phase !== "ready" && next.phase !== "empty") return;
+    setReportsState((current) => {
+      if (current.phase !== "ready" && current.phase !== "empty") return current;
+      return {
+        phase: "ready",
+        data: { items: mergeAdminReportPages(current.data.items, next.data.items), nextCursor: next.data.nextCursor },
+      };
+    });
+    setReportsMoreState({ phase: "idle" });
+  }, [onSessionExpired, reportStatus, reportsMoreState.phase, reportsState]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadReports(), 0);
@@ -617,6 +655,26 @@ export function ProfessionalCareReviewPanel({
                   <small>{formatDate(report.createdAt)}</small>
                 </button>
               ))}
+              {reportsMoreState.phase === "error" && (
+                <FeedbackState
+                  variant="error"
+                  title="Não foi possível carregar mais denúncias"
+                  description={adminErrorMessage(reportsMoreState.error, "As denúncias já carregadas continuam disponíveis.")}
+                  action={<button type="button" className={styles.secondaryButton} onClick={() => void loadMoreReports()}>Tentar novamente</button>}
+                  className={styles.feedback}
+                />
+              )}
+              {reportsState.data.nextCursor && reportsMoreState.phase !== "error" && (
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  disabled={reportsMoreState.phase === "loading"}
+                  aria-busy={reportsMoreState.phase === "loading"}
+                  onClick={() => void loadMoreReports()}
+                >
+                  {reportsMoreState.phase === "loading" ? "Carregando mais…" : "Carregar mais denúncias"}
+                </button>
+              )}
             </div>
             {selectedReport && (
               <div className={styles.reviewDetail}>

@@ -89,7 +89,7 @@ const server = createServer((request, response) => {
   }
 
   if (url.pathname === "/api/admin/care/communication-reports") {
-    json(response, 200, { reports: [] });
+    json(response, 200, { items: [], reports: [], nextCursor: null });
     return;
   }
 
