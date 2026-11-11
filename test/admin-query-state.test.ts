@@ -37,3 +37,34 @@ test("localized admin query distinguishes a successful empty response", async ()
   );
   assert.deepEqual(result, { phase: "empty", data: { active: 0, openReports: 0 } });
 });
+
+test("localized queues retry only the failed idempotent source", async () => {
+  let profileReads = 0;
+  let reportReads = 0;
+  const readProfiles = async () => {
+    profileReads += 1;
+    if (profileReads === 1) throw new AdminApiError({
+      message: "Fila indisponível.",
+      code: "CARE_PROFILE_QUEUE_UNAVAILABLE",
+      requestId: "req-profile-queue",
+      status: 503,
+    });
+    return [{ id: "profile-1" }];
+  };
+  const readReports = async () => {
+    reportReads += 1;
+    return [{ id: "report-1" }];
+  };
+
+  const [profilesFailed, reportsReady] = await Promise.all([
+    runAdminQuery(readProfiles),
+    runAdminQuery(readReports),
+  ]);
+  assert.equal(profilesFailed.phase, "error");
+  assert.equal(reportsReady.phase, "ready");
+
+  const profilesRetried = await runAdminQuery(readProfiles);
+  assert.equal(profilesRetried.phase, "ready");
+  assert.equal(profileReads, 2);
+  assert.equal(reportReads, 1);
+});

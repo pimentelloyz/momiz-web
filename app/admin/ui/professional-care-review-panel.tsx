@@ -151,21 +151,23 @@ export function ProfessionalCareReviewPanel({
   onSessionExpired: () => void;
 }) {
   const [status, setStatus] = useState<VerificationStatus>("PENDING_VERIFICATION");
-  const [profiles, setProfiles] = useState<ProfessionalProfile[]>([]);
+  const [profilesState, setProfilesState] = useState<AdminQueryState<ProfessionalProfile[]>>({ phase: "loading" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reason, setReason] = useState("");
-  const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState(false);
   const [openingCredential, setOpeningCredential] = useState<string | null>(null);
   const [metricsState, setMetricsState] = useState<AdminQueryState<Operations>>({ phase: "loading" });
   const [reportStatus, setReportStatus] = useState<CommunicationReportStatus>("OPEN");
-  const [reports, setReports] = useState<CommunicationReport[]>([]);
+  const [reportsState, setReportsState] = useState<AdminQueryState<CommunicationReport[]>>({ phase: "loading" });
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [resolutionNote, setResolutionNote] = useState("");
   const [resolvingReport, setResolvingReport] = useState(false);
   const [pilotReadiness, setPilotReadiness] = useState<PilotReadiness | null>(null);
   const [pilotDrafts, setPilotDrafts] = useState<Record<string, PilotDraft>>({});
   const [savingPilotGate, setSavingPilotGate] = useState<string | null>(null);
+
+  const profiles = profilesState.phase === "ready" || profilesState.phase === "empty" ? profilesState.data : [];
+  const reports = reportsState.phase === "ready" || reportsState.phase === "empty" ? reportsState.data : [];
 
   const selected = useMemo(
     () => profiles.find((profile) => profile.id === selectedId) ?? profiles[0] ?? null,
@@ -183,56 +185,25 @@ export function ProfessionalCareReviewPanel({
   );
   const isRenewalReview = selected?.verificationStatus === "VERIFIED" && pendingRenewals.length > 0;
 
-  function applyProfiles(nextProfiles: ProfessionalProfile[]) {
-    setProfiles(nextProfiles);
-    setSelectedId((current) =>
-      nextProfiles.some((profile) => profile.id === current)
-        ? current
-        : nextProfiles[0]?.id ?? null,
-    );
-  }
-
-  async function load() {
-    try {
+  const loadProfiles = useCallback(async () => {
+    setProfilesState({ phase: "loading" });
+    const next = await runAdminQuery(async () => {
       const data = (await adminApi(`care/profiles?status=${status}`)) as {
         profiles: ProfessionalProfile[];
       };
-      applyProfiles(data.profiles);
-    } catch (error) {
-      if (isAdminSessionExpired(error)) {
-        onSessionExpired();
-      } else {
-        onMessage(adminErrorMessage(error, "Não foi possível carregar os cadastros."));
-      }
-    } finally {
-      setLoading(false);
+      return data.profiles;
+    }, (items) => items.length === 0);
+    if (next.phase === "error" && isAdminSessionExpired(next.error)) {
+      onSessionExpired();
+      return;
     }
-  }
+    if (next.phase === "ready" || next.phase === "empty") {
+      setSelectedId((current) => next.data.some((profile) => profile.id === current) ? current : next.data[0]?.id ?? null);
+    }
+    setProfilesState(next);
+  }, [onSessionExpired, status]);
 
-  useEffect(() => {
-    let active = true;
-    adminApi(`care/profiles?status=${status}`)
-      .then((data) => {
-        if (!active) return;
-        const nextProfiles = (data as { profiles: ProfessionalProfile[] }).profiles;
-        setProfiles(nextProfiles);
-        setSelectedId((current) =>
-          nextProfiles.some((profile) => profile.id === current)
-            ? current
-            : nextProfiles[0]?.id ?? null,
-        );
-      })
-      .catch((error: unknown) => {
-        if (!active) return;
-        if (isAdminSessionExpired(error)) {
-          onSessionExpired();
-        } else {
-          onMessage(adminErrorMessage(error, "Não foi possível carregar os cadastros."));
-        }
-      })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [onMessage, onSessionExpired, status]);
+  useEffect(() => { void loadProfiles(); }, [loadProfiles]);
 
   const loadMetrics = useCallback(async () => {
     setMetricsState({ phase: "loading" });
@@ -369,48 +340,28 @@ export function ProfessionalCareReviewPanel({
   }
 
   const loadReports = useCallback(async () => {
-    try {
+    setReportsState({ phase: "loading" });
+    const next = await runAdminQuery(async () => {
       const data = (await adminApi(
         `care/communication-reports?status=${reportStatus}`,
       )) as { reports: CommunicationReport[] };
-      setReports(data.reports);
-      setSelectedReportId((current) =>
-        data.reports.some((report) => report.id === current)
-          ? current
-          : data.reports[0]?.id ?? null,
-      );
-    } catch (error) {
-      if (isAdminSessionExpired(error)) {
-        onSessionExpired();
-      } else {
-        onMessage(adminErrorMessage(error, "Não foi possível carregar as denúncias."));
-      }
+      return data.reports;
+    }, (items) => items.length === 0);
+    if (next.phase === "error" && isAdminSessionExpired(next.error)) {
+      onSessionExpired();
+      return;
     }
-  }, [onMessage, onSessionExpired, reportStatus]);
+    if (next.phase === "ready" || next.phase === "empty") {
+      setSelectedReportId((current) =>
+        next.data.some((report) => report.id === current)
+          ? current
+          : next.data[0]?.id ?? null,
+      );
+    }
+    setReportsState(next);
+  }, [onSessionExpired, reportStatus]);
 
-  useEffect(() => {
-    let active = true;
-    adminApi(`care/communication-reports?status=${reportStatus}`)
-      .then((data) => {
-        if (!active) return;
-        const nextReports = (data as { reports: CommunicationReport[] }).reports;
-        setReports(nextReports);
-        setSelectedReportId((current) =>
-          nextReports.some((report) => report.id === current)
-            ? current
-            : nextReports[0]?.id ?? null,
-        );
-      })
-      .catch((error: unknown) => {
-        if (!active) return;
-        if (isAdminSessionExpired(error)) {
-          onSessionExpired();
-        } else {
-          onMessage(adminErrorMessage(error, "Não foi possível carregar as denúncias."));
-        }
-      });
-    return () => { active = false; };
-  }, [onMessage, onSessionExpired, reportStatus]);
+  useEffect(() => { void loadReports(); }, [loadReports]);
 
   async function resolveReport(decision: "resolve" | "dismiss") {
     if (!selectedReport) return;
@@ -462,7 +413,7 @@ export function ProfessionalCareReviewPanel({
               : "Cadastro profissional rejeitado.",
       );
       setReason("");
-      await load();
+      await loadProfiles();
     } catch (error) {
       if (isAdminSessionExpired(error)) {
         onSessionExpired();
@@ -511,7 +462,7 @@ export function ProfessionalCareReviewPanel({
           </div>
           <label className={styles.statusFilter}>
             Situação
-            <select value={status} onChange={(event) => { setLoading(true); setStatus(event.target.value as VerificationStatus); }}>
+            <select value={status} onChange={(event) => setStatus(event.target.value as VerificationStatus)}>
               {Object.entries(statusLabels).map(([value, label]) => (
                 <option key={value} value={value}>{label}</option>
               ))}
@@ -562,8 +513,18 @@ export function ProfessionalCareReviewPanel({
             </select>
           </label>
         </div>
-        {reports.length === 0 ? (
-          <div className={styles.empty}><h3>Nenhuma denúncia nesta situação</h3><p>A fila está atualizada.</p></div>
+        {reportsState.phase === "loading" ? (
+          <FeedbackState variant="loading" title="Carregando denúncias" description="Consultando a fila de moderação selecionada." className={styles.feedback} />
+        ) : reportsState.phase === "error" ? (
+          <FeedbackState
+            variant="error"
+            title="Não foi possível carregar as denúncias"
+            description={adminErrorMessage(reportsState.error, "Não foi possível carregar as denúncias.")}
+            action={<button type="button" className={styles.secondaryButton} onClick={() => void loadReports()}>Tentar novamente</button>}
+            className={styles.feedback}
+          />
+        ) : reportsState.phase === "empty" ? (
+          <FeedbackState variant="empty" title="Nenhuma denúncia nesta situação" description="A consulta foi concluída e a fila está atualizada." className={styles.feedback} />
         ) : (
           <div className={styles.careReviewGrid}>
             <div className={styles.reviewList}>
@@ -626,8 +587,18 @@ export function ProfessionalCareReviewPanel({
         <aside className={styles.sectionCard}>
           <h3>Cadastros</h3>
           <div className={styles.reviewList}>
-            {loading ? <p>Carregando cadastros…</p> : profiles.length === 0 ? (
-              <p>Nenhum cadastro nesta situação.</p>
+            {profilesState.phase === "loading" ? (
+              <FeedbackState variant="loading" title="Carregando cadastros" description="Consultando a fila de verificação selecionada." className={styles.feedback} />
+            ) : profilesState.phase === "error" ? (
+              <FeedbackState
+                variant="error"
+                title="Não foi possível carregar os cadastros"
+                description={adminErrorMessage(profilesState.error, "Não foi possível carregar os cadastros.")}
+                action={<button type="button" className={styles.secondaryButton} onClick={() => void loadProfiles()}>Tentar novamente</button>}
+                className={styles.feedback}
+              />
+            ) : profilesState.phase === "empty" ? (
+              <FeedbackState variant="empty" title="Nenhum cadastro nesta situação" description="A consulta foi concluída e não há perfis nesta fila." className={styles.feedback} />
             ) : profiles.map((profile) => (
               <button
                 key={profile.id}
@@ -643,7 +614,11 @@ export function ProfessionalCareReviewPanel({
         </aside>
 
         <main className={styles.sectionCard}>
-          {!selected ? (
+          {profilesState.phase === "error" ? (
+            <div className={styles.empty}><h3>Detalhes indisponíveis</h3><p>Recarregue a fila de cadastros para consultar perfil e credenciais.</p></div>
+          ) : profilesState.phase === "loading" ? (
+            <div className={styles.empty}><h3>Carregando detalhes</h3><p>Aguarde a atualização da fila.</p></div>
+          ) : !selected ? (
             <div className={styles.empty}><h3>Selecione um cadastro</h3><p>Os detalhes e registros aparecem aqui.</p></div>
           ) : (
             <div className={styles.reviewDetail}>
