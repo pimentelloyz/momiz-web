@@ -20,13 +20,18 @@ O portal possui implementação ampla, mas os módulos MT-01 a MT-09 são libera
 | Entitlements | `NEXT_PUBLIC_ENABLE_MT09_ENTITLEMENTS` | resumo do plano profissional |
 | Patrocínio de chat | `NEXT_PUBLIC_ENABLE_MT09_CHAT_SPONSORSHIP` | validação do direito de mensagem por vínculo |
 
-Flag ausente ou diferente de `true` deixa o módulo correspondente `DISABLED`.
+Flag ausente ou vazia deixa o módulo correspondente `DISABLED`; valores não
+booleanos e combinações inválidas bloqueiam a superfície com diagnóstico seguro.
+MT-02 a MT-09 exigem MT-01, documentos e chat exigem vínculos MT-02,
+preferências exigem o feed de notificações e sponsorship exige entitlements.
 
 ## Operação implementada
 
 - cadastro profissional precisa existir e MFA pode ser exigido;
-- dashboard legado: perfil, pacientes, agenda, exportação de calendário e clínicas;
-- clínicas: criar clínica, aceitar convite, listar membros, convidar, cancelar convite, suspender/reativar e transferir propriedade;
+- dashboard legado: perfil, pacientes, agenda e exportação de calendário;
+- nos modos legado e contextual, clínicas permitem criar clínica, consumir
+  `clinicInvite`, listar membros, convidar, cancelar convite, suspender/reativar
+  e transferir propriedade;
 - portal contextual: módulos da tabela acima, com erros canônicos e `requestId`;
 - ações mutáveis usam chaves de idempotência quando o contrato exige;
 - dados clínicos permanecem no backend; a web evita inferências e exibe avisos não emergenciais.

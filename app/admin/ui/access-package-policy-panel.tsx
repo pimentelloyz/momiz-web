@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { adminApi, jsonRequest } from "./admin-api-client";
+import { adminApi, adminErrorMessage, isAdminSessionExpired, jsonRequest } from "./admin-api-client";
 import {
   capabilityLabel,
   capabilityMetadata,
@@ -68,11 +68,11 @@ export function AccessPackagePolicyPanel({ onMessage, onSessionExpired }: Props)
 
   const handleError = useCallback(
     (error: unknown) => {
-      if (error instanceof Error && error.message === "SESSION_EXPIRED") {
+      if (isAdminSessionExpired(error)) {
         onSessionExpired();
         return;
       }
-      onMessage(error instanceof Error ? error.message : "Erro inesperado.");
+      onMessage(adminErrorMessage(error));
     },
     [onMessage, onSessionExpired],
   );

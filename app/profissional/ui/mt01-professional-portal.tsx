@@ -14,6 +14,7 @@ import { ProfessionalChatPanel } from "./professional-chat-panel";
 import { ProfessionalNotificationsPanel } from "./professional-notifications-panel";
 import { ProfessionalLaborEventsPanel } from "./professional-labor-events-panel";
 import { ProfessionalEntitlementsPanel } from "./professional-entitlements-panel";
+import { ClinicTeamPanel } from "./clinic-team-panel";
 
 type Phase = "loading" | "empty" | "select" | "switching" | "ready" | "denied" | "error";
 type Option = CareContextSelection & { profileVersion: number; label: string; status: string };
@@ -142,11 +143,11 @@ export function Mt01ProfessionalPortal({
     if (option) await resolveOption(option);
   }
 
-  async function logout() {
+  const logout = useCallback(async () => {
     requestRef.current?.abort(); setActive(null); setBootstrap(null);
     await fetch("/profissional/api/session", { method: "DELETE" });
     router.replace("/profissional/login"); router.refresh();
-  }
+  }, [router]);
 
   const cacheKey = active && bootstrap ? careContextCacheKey(bootstrap.sessionEpoch, active.context, "summary").join(":") : "";
   return (
@@ -169,6 +170,7 @@ export function Mt01ProfessionalPortal({
           {phase === "error" && <div className={styles.error} role="alert"><strong>Não foi possível abrir o contexto</strong><p>{error?.message}</p>{error?.requestId && <small>Identificador: {error.requestId}</small>}<button className={styles.secondaryButton} onClick={() => void loadBootstrap()}>Tentar novamente</button></div>}
           {phase === "ready" && active && <div className={styles.contextReady} role="status"><strong>Contexto validado</strong><span>Perfil {shortId(active.context.profileId)} · gestação {shortId(active.context.pregnancyId)}</span><span>Acesso: {active.context.accessKind === "PROFESSIONAL_RELATIONSHIP" ? "vínculo profissional" : active.context.accessKind}</span>{(summaryRequestId || active.requestId) && <small>Identificador: {summaryRequestId || active.requestId}</small>}</div>}
         </section>
+        <ClinicTeamPanel onSessionExpired={logout} />
         {phase === "ready" && active && bootstrap && enableNotifications && (
           <ProfessionalNotificationsPanel key={`${bootstrap.sessionEpoch}:${active.context.profileId}:notifications`} profileId={active.context.profileId} sessionEpoch={bootstrap.sessionEpoch} enablePreferences={enableNotificationPreferences} />
         )}

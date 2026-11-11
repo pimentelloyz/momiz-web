@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { hasProfessionalSession } from "../../lib/professional/professional-session";
+import { professionalPortalMode, resolveProfessionalFeatureFlags } from "../../lib/professional/professional-feature-flags";
 import { ProfessionalDashboard } from "./ui/professional-dashboard";
 import { Mt01ProfessionalPortal } from "./ui/mt01-professional-portal";
+import styles from "./ui/professional.module.css";
 
 export default async function ProfessionalPage({
   searchParams,
@@ -16,18 +18,36 @@ export default async function ProfessionalPage({
       : "/profissional";
     redirect(`/profissional/login?returnTo=${encodeURIComponent(returnTo)}`);
   }
-  return process.env.NEXT_PUBLIC_ENABLE_MT01_CARE_CONTEXTS === "true"
+  const configuration = resolveProfessionalFeatureFlags();
+  if (configuration.issues.length > 0) {
+    return (
+      <main className={styles.portalPage}>
+        <section className={styles.contextCard} role="alert" aria-labelledby="professional-config-title">
+          <span className={styles.kicker}>Configuração do portal</span>
+          <h1 id="professional-config-title">Portal temporariamente indisponível</h1>
+          <p>A combinação de módulos profissionais deste ambiente é inválida.</p>
+          <ul>
+            {configuration.issues.map((issue) => <li key={`${issue.flag}:${issue.dependency || issue.code}`}>{issue.message}</li>)}
+          </ul>
+          <p>Nenhum valor de configuração ou dado de usuário foi exibido.</p>
+        </section>
+      </main>
+    );
+  }
+
+  const { flags } = configuration;
+  return professionalPortalMode(flags) === "contextual"
     ? <Mt01ProfessionalPortal
-        enablePatientReader={process.env.NEXT_PUBLIC_ENABLE_MT03_PROFESSIONAL_PATIENTS === "true"}
-        enableRelationships={process.env.NEXT_PUBLIC_ENABLE_MT02_CARE_RELATIONSHIPS === "true"}
-        enableDocuments={process.env.NEXT_PUBLIC_ENABLE_MT04_DOCUMENT_SHARES === "true"}
-        enableAppointments={process.env.NEXT_PUBLIC_ENABLE_MT05_APPOINTMENTS === "true"}
-        enableChat={process.env.NEXT_PUBLIC_ENABLE_MT06_CARE_CHAT === "true"}
-        enableNotifications={process.env.NEXT_PUBLIC_ENABLE_MT08_NOTIFICATIONS === "true"}
-        enableNotificationPreferences={process.env.NEXT_PUBLIC_ENABLE_MT08_NOTIFICATION_PREFERENCES === "true"}
-        enableLaborEvents={process.env.NEXT_PUBLIC_ENABLE_MT07_LABOR_EVENTS === "true"}
-        enableEntitlements={process.env.NEXT_PUBLIC_ENABLE_MT09_ENTITLEMENTS === "true"}
-        enableChatSponsorship={process.env.NEXT_PUBLIC_ENABLE_MT09_CHAT_SPONSORSHIP === "true"}
+        enablePatientReader={flags.patientReader}
+        enableRelationships={flags.relationships}
+        enableDocuments={flags.documents}
+        enableAppointments={flags.appointments}
+        enableChat={flags.chat}
+        enableNotifications={flags.notifications}
+        enableNotificationPreferences={flags.notificationPreferences}
+        enableLaborEvents={flags.laborEvents}
+        enableEntitlements={flags.entitlements}
+        enableChatSponsorship={flags.chatSponsorship}
       />
     : <ProfessionalDashboard />;
 }

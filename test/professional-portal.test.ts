@@ -83,6 +83,64 @@ import {
 import { LABOR_SAFETY_TEXT_PT_BR, LABOR_SAFETY_TEXT_VERSION, laborEventLabel, mergeLaborEvents, parseLaborEventPage } from "../lib/professional/labor-events.ts";
 import { parseCareEntitlement, parseChatEntitlement } from "../lib/professional/care-entitlements.ts";
 import { entitlementUpstreamPath, isAllowedEntitlementPath, isMt09ChatSponsorshipEnabled, isMt09EntitlementsEnabled } from "../lib/professional/entitlement-policy.ts";
+import {
+  professionalFeatureFlagNames,
+  professionalPortalMode,
+  resolveProfessionalFeatureFlags,
+} from "../lib/professional/professional-feature-flags.ts";
+
+test("professional rollout keeps the legacy mode when MT-01 is disabled", () => {
+  const result = resolveProfessionalFeatureFlags({});
+  assert.deepEqual(result.issues, []);
+  assert.equal(professionalPortalMode(result.flags), "legacy");
+  assert.equal(Object.values(result.flags).every((enabled) => !enabled), true);
+});
+
+test("professional rollout enables the contextual mode with a valid complete matrix", () => {
+  const environment = Object.fromEntries(
+    professionalFeatureFlagNames.map((flag) => [flag, "true"]),
+  );
+  const result = resolveProfessionalFeatureFlags(environment);
+  assert.deepEqual(result.issues, []);
+  assert.equal(professionalPortalMode(result.flags), "contextual");
+  assert.equal(Object.values(result.flags).every(Boolean), true);
+});
+
+test("professional rollout reports invalid values without exposing their contents", () => {
+  const secretLikeValue = "unexpected-sensitive-value";
+  const result = resolveProfessionalFeatureFlags({
+    NEXT_PUBLIC_ENABLE_MT01_CARE_CONTEXTS: secretLikeValue,
+  });
+  assert.deepEqual(result.issues.map((issue) => issue.code), ["INVALID_VALUE"]);
+  assert.match(result.issues[0].message, /NEXT_PUBLIC_ENABLE_MT01_CARE_CONTEXTS/);
+  assert.equal(result.issues[0].message.includes(secretLikeValue), false);
+});
+
+test("professional rollout rejects modules without their required parents", () => {
+  const missingMt01 = resolveProfessionalFeatureFlags({
+    NEXT_PUBLIC_ENABLE_MT03_PROFESSIONAL_PATIENTS: "true",
+  });
+  assert.deepEqual(missingMt01.issues.map((issue) => issue.dependency), [
+    "NEXT_PUBLIC_ENABLE_MT01_CARE_CONTEXTS",
+  ]);
+
+  const nestedDependencies = resolveProfessionalFeatureFlags({
+    NEXT_PUBLIC_ENABLE_MT01_CARE_CONTEXTS: "true",
+    NEXT_PUBLIC_ENABLE_MT04_DOCUMENT_SHARES: "true",
+    NEXT_PUBLIC_ENABLE_MT06_CARE_CHAT: "true",
+    NEXT_PUBLIC_ENABLE_MT08_NOTIFICATION_PREFERENCES: "true",
+    NEXT_PUBLIC_ENABLE_MT09_CHAT_SPONSORSHIP: "true",
+  });
+  assert.deepEqual(
+    nestedDependencies.issues.map((issue) => [issue.flag, issue.dependency]),
+    [
+      ["NEXT_PUBLIC_ENABLE_MT04_DOCUMENT_SHARES", "NEXT_PUBLIC_ENABLE_MT02_CARE_RELATIONSHIPS"],
+      ["NEXT_PUBLIC_ENABLE_MT06_CARE_CHAT", "NEXT_PUBLIC_ENABLE_MT02_CARE_RELATIONSHIPS"],
+      ["NEXT_PUBLIC_ENABLE_MT08_NOTIFICATION_PREFERENCES", "NEXT_PUBLIC_ENABLE_MT08_NOTIFICATIONS"],
+      ["NEXT_PUBLIC_ENABLE_MT09_CHAT_SPONSORSHIP", "NEXT_PUBLIC_ENABLE_MT09_ENTITLEMENTS"],
+    ],
+  );
+});
 
 test("professional proxy exposes only explicit portal endpoints and methods", () => {
   assert.equal(isAllowedProfessionalCarePath("professional/profile"), true);

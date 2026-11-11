@@ -254,9 +254,9 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
   const selectedClinic = useMemo(() => clinics.find((clinic) => clinic.id === selectedId), [clinics, selectedId]);
 
   return (
-    <section className={`${styles.panel} ${styles.clinicPanel}`}>
+    <section className={`${styles.panel} ${styles.clinicPanel}`} aria-busy={loading} aria-labelledby="clinic-team-title">
       <div className={styles.sectionHeading}>
-        <div><span className={styles.kicker}>Clínicas e equipes</span><h2>Gestão de profissionais</h2></div>
+        <div><span className={styles.kicker}>Clínicas e equipes</span><h2 id="clinic-team-title">Gestão de profissionais</h2></div>
         <span>{clinics.length}</span>
       </div>
       <p className={styles.sectionDescription}>Organize sua equipe sem compartilhar automaticamente nenhuma paciente ou dado clínico.</p>
@@ -275,7 +275,7 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
         </form>
       </div>
 
-      {loading ? <div className={styles.inlineLoading}>Carregando equipes…</div> : clinics.length === 0 ? (
+      {loading ? <div className={styles.inlineLoading} role="status">Carregando equipes…</div> : clinics.length === 0 ? (
         <div className={styles.emptyState}><strong>Nenhuma clínica criada</strong><p>Crie uma organização ou aceite um convite para começar.</p></div>
       ) : (
         <div className={styles.clinicWorkspace}>

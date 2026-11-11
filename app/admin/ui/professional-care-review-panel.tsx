@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { adminApi, jsonRequest } from "./admin-api-client";
+import { adminApi, adminErrorMessage, isAdminSessionExpired, jsonRequest } from "./admin-api-client";
 import {
   PilotDraft,
   PilotGate,
@@ -195,10 +195,10 @@ export function ProfessionalCareReviewPanel({
       };
       applyProfiles(data.profiles);
     } catch (error) {
-      if (error instanceof Error && error.message === "SESSION_EXPIRED") {
+      if (isAdminSessionExpired(error)) {
         onSessionExpired();
       } else {
-        onMessage(error instanceof Error ? error.message : "Não foi possível carregar os cadastros.");
+        onMessage(adminErrorMessage(error, "Não foi possível carregar os cadastros."));
       }
     } finally {
       setLoading(false);
@@ -220,10 +220,10 @@ export function ProfessionalCareReviewPanel({
       })
       .catch((error: unknown) => {
         if (!active) return;
-        if (error instanceof Error && error.message === "SESSION_EXPIRED") {
+        if (isAdminSessionExpired(error)) {
           onSessionExpired();
         } else {
-          onMessage(error instanceof Error ? error.message : "Não foi possível carregar os cadastros.");
+          onMessage(adminErrorMessage(error, "Não foi possível carregar os cadastros."));
         }
       })
       .finally(() => { if (active) setLoading(false); });
@@ -259,10 +259,12 @@ export function ProfessionalCareReviewPanel({
         expiredProfiles: metrics.expiredProfiles,
       });
     }).catch((error: unknown) => {
-      if (active && error instanceof Error && error.message === "SESSION_EXPIRED") onSessionExpired();
+      if (!active) return;
+      if (isAdminSessionExpired(error)) onSessionExpired();
+      else onMessage(adminErrorMessage(error, "Não foi possível carregar as métricas."));
     });
     return () => { active = false; };
-  }, [onSessionExpired]);
+  }, [onMessage, onSessionExpired]);
 
   const applyPilotReadiness = useCallback((readiness: PilotReadiness) => {
     setPilotReadiness(readiness);
@@ -284,8 +286,8 @@ export function ProfessionalCareReviewPanel({
       })
       .catch((error: unknown) => {
         if (!active) return;
-        if (error instanceof Error && error.message === "SESSION_EXPIRED") onSessionExpired();
-        else onMessage(error instanceof Error ? error.message : "Não foi possível carregar os gates do piloto.");
+        if (isAdminSessionExpired(error)) onSessionExpired();
+        else onMessage(adminErrorMessage(error, "Não foi possível carregar os gates do piloto."));
       });
     return () => { active = false; };
   }, [applyPilotReadiness, onMessage, onSessionExpired]);
@@ -327,8 +329,8 @@ export function ProfessionalCareReviewPanel({
       applyPilotReadiness(data.readiness);
       onMessage("Gate registrado com trilha de auditoria. Nenhum rollout foi ativado.");
     } catch (error) {
-      if (error instanceof Error && error.message === "SESSION_EXPIRED") onSessionExpired();
-      else onMessage(error instanceof Error ? error.message : "Não foi possível registrar o gate.");
+      if (isAdminSessionExpired(error)) onSessionExpired();
+      else onMessage(adminErrorMessage(error, "Não foi possível registrar o gate."));
     } finally {
       setSavingPilotGate(null);
     }
@@ -372,10 +374,10 @@ export function ProfessionalCareReviewPanel({
           : data.reports[0]?.id ?? null,
       );
     } catch (error) {
-      if (error instanceof Error && error.message === "SESSION_EXPIRED") {
+      if (isAdminSessionExpired(error)) {
         onSessionExpired();
       } else {
-        onMessage(error instanceof Error ? error.message : "Não foi possível carregar as denúncias.");
+        onMessage(adminErrorMessage(error, "Não foi possível carregar as denúncias."));
       }
     }
   }, [onMessage, onSessionExpired, reportStatus]);
@@ -395,10 +397,10 @@ export function ProfessionalCareReviewPanel({
       })
       .catch((error: unknown) => {
         if (!active) return;
-        if (error instanceof Error && error.message === "SESSION_EXPIRED") {
+        if (isAdminSessionExpired(error)) {
           onSessionExpired();
         } else {
-          onMessage(error instanceof Error ? error.message : "Não foi possível carregar as denúncias.");
+          onMessage(adminErrorMessage(error, "Não foi possível carregar as denúncias."));
         }
       });
     return () => { active = false; };
@@ -424,8 +426,8 @@ export function ProfessionalCareReviewPanel({
         openReports: Math.max(0, current.openReports - 1),
       }));
     } catch (error) {
-      if (error instanceof Error && error.message === "SESSION_EXPIRED") onSessionExpired();
-      else onMessage(error instanceof Error ? error.message : "Não foi possível encerrar a denúncia.");
+      if (isAdminSessionExpired(error)) onSessionExpired();
+      else onMessage(adminErrorMessage(error, "Não foi possível encerrar a denúncia."));
     } finally {
       setResolvingReport(false);
     }
@@ -459,10 +461,10 @@ export function ProfessionalCareReviewPanel({
       setReason("");
       await load();
     } catch (error) {
-      if (error instanceof Error && error.message === "SESSION_EXPIRED") {
+      if (isAdminSessionExpired(error)) {
         onSessionExpired();
       } else {
-        onMessage(error instanceof Error ? error.message : "Não foi possível concluir a análise.");
+        onMessage(adminErrorMessage(error, "Não foi possível concluir a análise."));
       }
     } finally {
       setReviewing(false);
@@ -481,7 +483,7 @@ export function ProfessionalCareReviewPanel({
       else window.location.assign(result.downloadUrl);
     } catch (error) {
       popup?.close();
-      onMessage(error instanceof Error ? error.message : "Não foi possível abrir o comprovante.");
+      onMessage(adminErrorMessage(error, "Não foi possível abrir o comprovante."));
     } finally {
       setOpeningCredential(null);
     }

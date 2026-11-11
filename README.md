@@ -76,8 +76,15 @@ O contexto explícito de cuidado do portal profissional fica desligado por padr�
 Para testar localmente contra uma API que já exponha os contratos MT-01, defina
 `NEXT_PUBLIC_ENABLE_MT01_CARE_CONTEXTS=true` em um arquivo local ignorado pelo Git
 e reinicie `npm run dev`. Sem a flag, `/profissional` preserva integralmente o
-dashboard legado. Com a flag, o portal usa apenas listagem/resolução de contextos
-e o resumo v2; não mistura dados das rotas legadas baseadas em `patientUserId`.
+dashboard legado. Com a flag, o portal usa listagem/resolução de contextos e o
+resumo v2 sem misturar dados das rotas legadas baseadas em `patientUserId`; a
+gestão não clínica de clínicas/equipes permanece disponível nos dois modos e
+continua consumindo `clinicInvite`.
+
+As flags aceitam somente `true` ou `false`. MT-02 a MT-09 exigem MT-01; MT-04 e
+MT-06 também exigem MT-02; preferências MT-08 exigem o feed MT-08; sponsorship
+MT-09 exige entitlements MT-09. Uma combinação inválida interrompe a superfície
+profissional com um diagnóstico que lista apenas nomes de flags, nunca valores.
 
 O BFF espera `GET /api/account/care-profiles`,
 `POST /api/account/care-context/resolve` e
@@ -98,7 +105,8 @@ A lista usa cursor opaco, busca com debounce e não oferece detalhe enquanto nã
 existir rota v2 autorizada. O dashboard legado permanece inalterado com a flag
 desligada.
 
-O reader MT-04 depende do contexto MT-01 e permanece desligado por padrão. Para
+O reader MT-04 depende do contexto MT-01 e dos vínculos MT-02 e permanece
+desligado por padrão. Para
 validar documentos compartilhados em localhost, defina
 `NEXT_PUBLIC_ENABLE_MT04_DOCUMENT_SHARES=true` junto das flags centrais da API.
 O BFF expõe somente lista, download efêmero, revisão e comentário profissionais;

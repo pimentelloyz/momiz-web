@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AccessPackagePolicyPanel } from "./access-package-policy-panel";
 import { ProfessionalCareReviewPanel } from "./professional-care-review-panel";
 import { CareAnalyticsPanel } from "./care-analytics-panel";
-import { adminApi as api } from "./admin-api-client";
+import { adminApi as api, adminErrorMessage, isAdminSessionExpired } from "./admin-api-client";
 import styles from "./admin.module.css";
 
 type UserSummary = {
@@ -108,12 +108,12 @@ export function AdminDashboard() {
 
   const handleError = useCallback(
     (error: unknown) => {
-      if (error instanceof Error && error.message === "SESSION_EXPIRED") {
+      if (isAdminSessionExpired(error)) {
         router.replace("/admin/login");
         router.refresh();
         return;
       }
-      setMessage(error instanceof Error ? error.message : "Erro inesperado.");
+      setMessage(adminErrorMessage(error));
     },
     [router],
   );
@@ -137,18 +137,10 @@ export function AdminDashboard() {
 
   useEffect(() => {
     let active = true;
-    fetch("/admin/api/access/users?pageSize=30")
-      .then(async (response) => {
-        const data = (await response.json().catch(() => ({}))) as {
-          items?: UserSummary[];
-        };
-        if (!response.ok)
-          throw new Error(
-            response.status === 401
-              ? "SESSION_EXPIRED"
-              : "Não foi possível carregar os usuários.",
-          );
-        if (active) setUsers(data.items || []);
+    api("users?pageSize=30")
+      .then((data) => {
+        const payload = data as { items?: UserSummary[] };
+        if (active) setUsers(payload.items || []);
       })
       .catch((error: unknown) => {
         if (active) handleError(error);

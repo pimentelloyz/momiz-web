@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { adminApi } from "./admin-api-client";
+import { adminApi, adminErrorMessage, isAdminSessionExpired } from "./admin-api-client";
 import styles from "./admin.module.css";
 
 type Metric = { value: number | null; suppressed: boolean };
@@ -112,8 +112,8 @@ export function CareAnalyticsPanel({
       setReport(data.report);
       onMessage("Relatório anônimo atualizado.");
     } catch (error) {
-      if (error instanceof Error && error.message === "SESSION_EXPIRED") onSessionExpired();
-      else onMessage(error instanceof Error ? error.message : "Não foi possível gerar o relatório.");
+      if (isAdminSessionExpired(error)) onSessionExpired();
+      else onMessage(adminErrorMessage(error, "Não foi possível gerar o relatório."));
     } finally {
       setLoading(false);
     }
