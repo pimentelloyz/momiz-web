@@ -780,6 +780,7 @@
   font-weight: 800;
 }
 .statusFilter select,
+.statusFilter input,
 .reviewActions textarea {
   width: 100%;
   padding: 11px 13px;
@@ -801,6 +802,10 @@
   margin-top: 18px;
   display: grid;
   gap: 8px;
+}
+ol.reviewList {
+  padding: 0;
+  list-style: none;
 }
 .reviewItem,
 .reviewSelected {

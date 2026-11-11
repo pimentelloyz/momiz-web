@@ -7,6 +7,7 @@ import { AdminMutationState, AdminQueryState, runAdminMutation, runAdminQuery } 
 import { readCredentialDownloadUrl } from "./admin-credential-download";
 import { AdminProfilePage, mergeAdminProfilePages, readAdminProfilePage } from "./admin-profile-pagination";
 import { AdminReportPage, mergeAdminReportPages, readAdminReportPage } from "./admin-report-pagination";
+import { AdminAuditPage, isUuidFilter, mergeAdminAuditPages, readAdminAuditPage } from "./admin-audit-pagination";
 import {
   PilotDraft,
   PilotGate,
@@ -169,6 +170,13 @@ export function ProfessionalCareReviewPanel({
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [resolutionNote, setResolutionNote] = useState("");
   const [reportMutation, setReportMutation] = useState<AdminMutationState>({ phase: "idle" });
+  const [auditFilterDraft, setAuditFilterDraft] = useState("");
+  const [auditPatientFilter, setAuditPatientFilter] = useState("");
+  const [auditFilterError, setAuditFilterError] = useState<string | null>(null);
+  const [auditState, setAuditState] = useState<AdminQueryState<AdminAuditPage>>({ phase: "loading" });
+  const [auditMoreState, setAuditMoreState] = useState<AdminQueryState<AdminAuditPage> | { phase: "idle" }>({ phase: "idle" });
+  const auditFilterRef = useRef(auditPatientFilter);
+  const auditRequestVersionRef = useRef(0);
   const [pilotReadinessState, setPilotReadinessState] = useState<AdminQueryState<PilotReadiness>>({ phase: "loading" });
   const [pilotDrafts, setPilotDrafts] = useState<Record<string, PilotDraft>>({});
   const [pilotMutations, setPilotMutations] = useState<Record<string, AdminMutationState>>({});
@@ -181,6 +189,10 @@ export function ProfessionalCareReviewPanel({
     activeReportStatusRef.current = reportStatus;
   }, [reportStatus]);
 
+  useEffect(() => {
+    auditFilterRef.current = auditPatientFilter;
+  }, [auditPatientFilter]);
+
   const profiles = useMemo(
     () => profilesState.phase === "ready" || profilesState.phase === "empty" ? profilesState.data.items : [],
     [profilesState],
@@ -188,6 +200,10 @@ export function ProfessionalCareReviewPanel({
   const reports = useMemo(
     () => reportsState.phase === "ready" || reportsState.phase === "empty" ? reportsState.data.items : [],
     [reportsState],
+  );
+  const auditItems = useMemo(
+    () => auditState.phase === "ready" || auditState.phase === "empty" ? auditState.data.items : [],
+    [auditState],
   );
   const pilotReadiness = pilotReadinessState.phase === "ready" || pilotReadinessState.phase === "empty" ? pilotReadinessState.data : null;
 
@@ -467,6 +483,67 @@ export function ProfessionalCareReviewPanel({
     return () => window.clearTimeout(timer);
   }, [loadReports]);
 
+  const loadAuditLogs = useCallback(async () => {
+    const requestedFilter = auditPatientFilter;
+    const requestVersion = auditRequestVersionRef.current + 1;
+    auditRequestVersionRef.current = requestVersion;
+    setAuditState({ phase: "loading" });
+    setAuditMoreState({ phase: "idle" });
+    const next = await runAdminQuery(async () => {
+      const query = new URLSearchParams({ limit: "50" });
+      if (requestedFilter) query.set("patientUserId", requestedFilter);
+      return readAdminAuditPage(await adminApi(`care/audit-logs?${query}`));
+    }, (page) => page.items.length === 0);
+    if (auditFilterRef.current !== requestedFilter || auditRequestVersionRef.current !== requestVersion) return next;
+    if (next.phase === "error" && isAdminSessionExpired(next.error)) {
+      onSessionExpired();
+      return next;
+    }
+    setAuditState(next);
+    return next;
+  }, [auditPatientFilter, onSessionExpired]);
+
+  const loadMoreAuditLogs = useCallback(async () => {
+    if (auditState.phase !== "ready" || !auditState.data.nextCursor || auditMoreState.phase === "loading") return;
+    const requestedFilter = auditPatientFilter;
+    const cursor = auditState.data.nextCursor;
+    const requestVersion = auditRequestVersionRef.current;
+    setAuditMoreState({ phase: "loading" });
+    const next = await runAdminQuery(async () => {
+      const query = new URLSearchParams({ limit: "50", cursor });
+      if (requestedFilter) query.set("patientUserId", requestedFilter);
+      return readAdminAuditPage(await adminApi(`care/audit-logs?${query}`));
+    }, () => false);
+    if (auditFilterRef.current !== requestedFilter || auditRequestVersionRef.current !== requestVersion) return;
+    if (next.phase === "error") {
+      if (isAdminSessionExpired(next.error)) onSessionExpired();
+      setAuditMoreState(next);
+      return;
+    }
+    if (next.phase !== "ready" && next.phase !== "empty") return;
+    setAuditState((current) => {
+      if (current.phase !== "ready" && current.phase !== "empty") return current;
+      return { phase: "ready", data: { items: mergeAdminAuditPages(current.data.items, next.data.items), nextCursor: next.data.nextCursor } };
+    });
+    setAuditMoreState({ phase: "idle" });
+  }, [auditMoreState.phase, auditPatientFilter, auditState, onSessionExpired]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadAuditLogs(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadAuditLogs]);
+
+  function applyAuditFilter() {
+    const value = auditFilterDraft.trim();
+    if (value && !isUuidFilter(value)) {
+      setAuditFilterError("Informe um UUID válido para filtrar por paciente.");
+      return;
+    }
+    setAuditFilterError(null);
+    if (value === auditPatientFilter) void loadAuditLogs();
+    else setAuditPatientFilter(value);
+  }
+
   async function resolveReport(decision: "resolve" | "dismiss") {
     if (!selectedReport) return;
     if (!resolutionNote.trim()) {
@@ -716,6 +793,95 @@ export function ProfessionalCareReviewPanel({
               </div>
             )}
           </div>
+        )}
+      </section>
+
+      <section className={styles.sectionCard}>
+        <div className={styles.sectionTitle}>
+          <div>
+            <span className={styles.kicker}>Auditoria minimizada</span>
+            <h2>Acessos administrativos ao cuidado</h2>
+            <p>Consulte somente identificadores operacionais, recurso, ação, resultado e correlação.</p>
+          </div>
+          <form
+            className={styles.statusFilter}
+            onSubmit={(event) => { event.preventDefault(); applyAuditFilter(); }}
+          >
+            <label htmlFor="audit-patient-filter">UUID da paciente (opcional)</label>
+            <input
+              id="audit-patient-filter"
+              value={auditFilterDraft}
+              onChange={(event) => { setAuditFilterDraft(event.target.value); setAuditFilterError(null); }}
+              aria-invalid={Boolean(auditFilterError)}
+              aria-describedby={auditFilterError ? "audit-patient-filter-error" : undefined}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <div className={styles.actions}>
+              <button type="submit" className={styles.secondaryButton}>Aplicar filtro</button>
+              {(auditFilterDraft || auditPatientFilter) && (
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => {
+                    setAuditFilterDraft("");
+                    setAuditFilterError(null);
+                    if (auditPatientFilter) setAuditPatientFilter("");
+                    else void loadAuditLogs();
+                  }}
+                >
+                  Limpar
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+        {auditFilterError && <p id="audit-patient-filter-error" role="alert" className={styles.feedback}>{auditFilterError}</p>}
+        {auditState.phase === "loading" ? (
+          <FeedbackState variant="loading" title="Carregando auditoria" description="Consultando eventos administrativos minimizados." className={styles.feedback} />
+        ) : auditState.phase === "error" ? (
+          <FeedbackState
+            variant="error"
+            title="Não foi possível carregar a auditoria"
+            description={adminErrorMessage(auditState.error, "Não foi possível consultar os eventos administrativos.")}
+            action={<button type="button" className={styles.secondaryButton} onClick={() => void loadAuditLogs()}>Tentar novamente</button>}
+            className={styles.feedback}
+          />
+        ) : auditState.phase === "empty" ? (
+          <FeedbackState variant="empty" title="Nenhum evento de auditoria" description="A consulta foi concluída sem eventos para o filtro informado." className={styles.feedback} />
+        ) : (
+          <>
+            <ol className={styles.reviewList} aria-label="Eventos de auditoria administrativa">
+              {auditItems.map((item) => (
+                <li key={item.id} className={styles.reviewBio}>
+                  <div><strong>{item.resource} · {item.action}</strong><span className={styles.planBadge}>{item.outcome}</span></div>
+                  <p>Paciente: {item.patientUserId}</p>
+                  <p>Ator: {item.actorUserId ?? "Sistema"}{item.relationshipId ? ` · Vínculo: ${item.relationshipId}` : ""}</p>
+                  <small>{formatDate(item.createdAt)}{item.requestId ? ` · Identificador: ${item.requestId}` : ""}</small>
+                </li>
+              ))}
+            </ol>
+            {auditMoreState.phase === "error" && (
+              <FeedbackState
+                variant="error"
+                title="Não foi possível carregar mais eventos"
+                description={adminErrorMessage(auditMoreState.error, "Os eventos já carregados continuam disponíveis.")}
+                action={<button type="button" className={styles.secondaryButton} onClick={() => void loadMoreAuditLogs()}>Tentar novamente</button>}
+                className={styles.feedback}
+              />
+            )}
+            {auditState.data.nextCursor && auditMoreState.phase !== "error" && (
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                disabled={auditMoreState.phase === "loading"}
+                aria-busy={auditMoreState.phase === "loading"}
+                onClick={() => void loadMoreAuditLogs()}
+              >
+                {auditMoreState.phase === "loading" ? "Carregando mais…" : "Carregar mais eventos"}
+              </button>
+            )}
+          </>
         )}
       </section>
 
