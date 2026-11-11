@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { adminApi, adminErrorMessage, isAdminSessionExpired, jsonRequest } from "./admin-api-client";
 import { FeedbackState, MutationFeedback } from "./admin-primitives";
 import { AdminMutationState, AdminQueryState, runAdminMutation, runAdminQuery } from "./admin-query-state";
+import { readCredentialDownloadUrl } from "./admin-credential-download";
 import {
   PilotDraft,
   PilotGate,
@@ -144,10 +145,8 @@ function csvCell(value: string | null | undefined) {
 }
 
 export function ProfessionalCareReviewPanel({
-  onMessage,
   onSessionExpired,
 }: {
-  onMessage: (message: string) => void;
   onSessionExpired: () => void;
 }) {
   const [status, setStatus] = useState<VerificationStatus>("PENDING_VERIFICATION");
@@ -155,7 +154,7 @@ export function ProfessionalCareReviewPanel({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [reviewMutation, setReviewMutation] = useState<AdminMutationState>({ phase: "idle" });
-  const [openingCredential, setOpeningCredential] = useState<string | null>(null);
+  const [credentialMutations, setCredentialMutations] = useState<Record<string, AdminMutationState>>({});
   const [metricsState, setMetricsState] = useState<AdminQueryState<Operations>>({ phase: "loading" });
   const [reportStatus, setReportStatus] = useState<CommunicationReportStatus>("OPEN");
   const [reportsState, setReportsState] = useState<AdminQueryState<CommunicationReport[]>>({ phase: "loading" });
@@ -457,19 +456,23 @@ export function ProfessionalCareReviewPanel({
   async function openCredential(credential: Credential) {
     if (!selected || !credential.documentFileName) return;
     const popup = window.open("", "_blank", "noopener,noreferrer");
-    setOpeningCredential(credential.id);
-    try {
-      const result = (await adminApi(
+    setCredentialMutations((current) => ({ ...current, [credential.id]: { phase: "pending" } }));
+    const result = await runAdminMutation(async () => {
+      const payload = await adminApi(
         `care/profiles/${selected.id}/credentials/${credential.id}/download-url`,
-      )) as { downloadUrl: string };
-      if (popup) popup.location.href = result.downloadUrl;
-      else window.location.assign(result.downloadUrl);
-    } catch (error) {
+      );
+      const downloadUrl = readCredentialDownloadUrl(payload);
+      if (popup) popup.location.replace(downloadUrl);
+      else window.location.assign(downloadUrl);
+    }, "Comprovante aberto em uma nova janela.");
+    if (result.phase === "error") {
       popup?.close();
-      onMessage(adminErrorMessage(error, "Não foi possível abrir o comprovante."));
-    } finally {
-      setOpeningCredential(null);
+      if (isAdminSessionExpired(result.error)) {
+        onSessionExpired();
+        return;
+      }
     }
+    setCredentialMutations((current) => ({ ...current, [credential.id]: result }));
   }
 
   return (
@@ -672,8 +675,9 @@ export function ProfessionalCareReviewPanel({
               <div>
                 <h3>Credenciais declaradas</h3>
                 <div className={styles.credentialList}>
-                  {selected.credentials.length === 0 ? <p>Nenhuma credencial informada.</p> : selected.credentials.map((credential) => (
-                    <article key={credential.id}>
+                  {selected.credentials.length === 0 ? <p>Nenhuma credencial informada.</p> : selected.credentials.map((credential) => {
+                    const mutation = credentialMutations[credential.id] ?? { phase: "idle" as const };
+                    return <article key={credential.id}>
                       <div>
                         <strong>{credential.type}</strong>
                         <span>{credential.renewalOfCredentialId ? `RENOVAÇÃO · ${credential.status}` : credential.status}</span>
@@ -681,16 +685,19 @@ export function ProfessionalCareReviewPanel({
                       <p>{credential.registrationNumber || "Sem número"}{credential.jurisdiction ? ` · ${credential.jurisdiction}` : ""}</p>
                       <small>{credential.specialty || credential.issuer || "Sem especialidade informada"}</small>
                       {credential.documentFileName && (
-                        <button
-                          className={styles.secondaryButton}
-                          disabled={openingCredential === credential.id}
-                          onClick={() => void openCredential(credential)}
-                        >
-                          {openingCredential === credential.id ? "Abrindo…" : "Ver comprovante"}
-                        </button>
+                        <>
+                          <MutationFeedback state={mutation} pendingTitle="Obtendo comprovante" errorTitle="Não foi possível abrir o comprovante" fallbackError="Não foi possível abrir o comprovante." className={styles.feedback} />
+                          <button
+                            className={styles.secondaryButton}
+                            disabled={mutation.phase === "pending"}
+                            onClick={() => void openCredential(credential)}
+                          >
+                            {mutation.phase === "pending" ? "Abrindo…" : "Ver comprovante"}
+                          </button>
+                        </>
                       )}
-                    </article>
-                  ))}
+                    </article>;
+                  })}
                 </div>
               </div>
               <div>

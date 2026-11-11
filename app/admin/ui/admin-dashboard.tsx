@@ -328,7 +328,6 @@ export function AdminDashboard() {
         />
       ) : section === "care" ? (
         <ProfessionalCareReviewPanel
-          onMessage={setMessage}
           onSessionExpired={() => {
             router.replace("/admin/login");
             router.refresh();
