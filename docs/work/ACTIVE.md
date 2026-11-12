@@ -2,7 +2,7 @@
 
 - Status: aguardando próxima tarefa
 - Atualizado em: 2026-11-12
-- Identificador: nenhum
+- Identificador: perfil-profissional-dto-minimo
 - Objetivo: nenhuma implementação ativa.
 - Escopo: a definir pelo coordenador.
 - Fora de escopo: a definir pelo coordenador.
@@ -11,7 +11,7 @@
 - Dependências de API/app: nenhuma tarefa ativa.
 - Próximo passo: aguardar novo pacote de trabalho.
 - Último checkpoint:
-  `docs/work/completed/2026-11-12-fila-perfis-item-minimo.md`.
+  `docs/work/completed/2026-11-12-perfil-profissional-dto-minimo.md`.
 
 ```markdown
 - Status:

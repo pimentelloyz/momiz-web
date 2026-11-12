@@ -13,13 +13,7 @@ import {
 } from "../../../lib/professional/agenda";
 import styles from "./professional.module.css";
 import { ClinicTeamPanel } from "./clinic-team-panel";
-
-type Profile = {
-  displayName?: string | null;
-  primaryProfession?: string | null;
-  verificationStatus?: string | null;
-  credentials?: Array<{ id: string; type?: string; status?: string; expiresAt?: string | null }>;
-};
+import type { ProfessionalProfile as Profile } from "../../../lib/professional/professional-profile";
 
 type Relationship = {
   id: string;
@@ -58,6 +52,7 @@ const verificationLabels: Record<string, string> = {
   PENDING_VERIFICATION: "Em análise",
   NEEDS_CORRECTION: "Correções necessárias",
   REJECTED: "Cadastro não aprovado",
+  SUSPENDED: "Cadastro suspenso",
   EXPIRED: "Credencial expirada",
 };
 
@@ -199,7 +194,9 @@ export function ProfessionalDashboard() {
           <span className={styles.kicker}>Portal profissional</span>
           <h1>Olá, {profile?.displayName || "profissional"}</h1>
           <div className={styles.statusBadge}>{verificationLabels[profile?.verificationStatus || ""] || "Cadastro pendente"}</div>
-          <p>O acesso a pacientes e à agenda será liberado após a validação do cadastro e das credenciais profissionais.</p>
+          <p>{profile?.verificationStatus === "SUSPENDED"
+            ? "Seu acesso profissional está suspenso. Consulte o suporte Momiz antes de tentar acessar dados de pacientes."
+            : "O acesso a pacientes e à agenda será liberado após a validação do cadastro e das credenciais profissionais."}</p>
           <p>Você pode acompanhar ou corrigir seu cadastro pelo aplicativo Momiz.</p>
           <button className={styles.secondaryButton} onClick={() => void logout()}>Sair</button>
         </section>

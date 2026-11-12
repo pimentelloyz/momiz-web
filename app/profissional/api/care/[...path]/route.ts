@@ -5,6 +5,7 @@ import {
   professionalApiFetch,
 } from "../../../../../lib/professional/professional-session";
 import { correlatedResponseHeaders, requestCorrelationHeaders } from "../../../../../lib/request-correlation";
+import { readProfessionalProfileResponse } from "../../../../../lib/professional/professional-profile";
 
 function readErrorCode(body: string) {
   try {
@@ -50,6 +51,19 @@ async function forward(
 
   const headers = correlatedResponseHeaders(upstream, incomingRequestId);
   headers.set("content-type", upstream.headers.get("content-type") || "application/json");
+  if (request.method === "GET" && relativePath === "professional/profile" && upstream.ok) {
+    try {
+      const projected = readProfessionalProfileResponse(JSON.parse(responseBody));
+      headers.set("content-type", "application/json");
+      return Response.json(projected, { status: upstream.status, headers });
+    } catch {
+      headers.set("content-type", "application/json");
+      return Response.json(
+        { code: "PROFESSIONAL_PROFILE_RESPONSE_INVALID", message: "Não foi possível carregar o perfil profissional." },
+        { status: 502, headers },
+      );
+    }
+  }
   const disposition = upstream.headers.get("content-disposition");
   if (disposition) headers.set("content-disposition", disposition);
   return new Response(responseBody || null, { status: upstream.status, headers });

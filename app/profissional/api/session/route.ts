@@ -6,6 +6,7 @@ import {
 } from "../../../../lib/professional/professional-session";
 import { API_BASE_URL } from "../../../../lib/site-config";
 import { correlatedResponseHeaders, requestCorrelationHeaders } from "../../../../lib/request-correlation";
+import { readProfessionalProfileResponse } from "../../../../lib/professional/professional-profile";
 
 type ExchangeResponse = { accessToken?: string; refreshToken?: string };
 type SessionRequest = { idToken?: string };
@@ -47,9 +48,21 @@ export async function POST(request: NextRequest) {
 
   await saveProfessionalSession({ accessToken: exchange.accessToken, refreshToken: exchange.refreshToken });
   const authorization = await professionalApiFetch("/api/care/professional/profile");
-  const payload = await authorization.clone().json().catch(() => null) as { profile?: unknown } | null;
-  const missingProfile = authorization.ok && payload?.profile === null;
-  if (!authorization.ok || !payload?.profile) {
+  const payload = await authorization.clone().json().catch(() => null);
+  let profile = null;
+  if (authorization.ok) {
+    try {
+      profile = readProfessionalProfileResponse(payload).profile;
+    } catch {
+      await clearProfessionalSession();
+      return Response.json(
+        { code: "PROFESSIONAL_PROFILE_RESPONSE_INVALID", message: "Não foi possível validar o perfil profissional." },
+        { status: 502, headers: correlatedResponseHeaders(authorization, incomingRequestId) },
+      );
+    }
+  }
+  const missingProfile = authorization.ok && profile === null;
+  if (!authorization.ok || !profile) {
     await clearProfessionalSession();
     if (errorCode(payload) === "MFA_REQUIRED") {
       return Response.json(
