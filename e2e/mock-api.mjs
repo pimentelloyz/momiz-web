@@ -107,11 +107,11 @@ const server = createServer((request, response) => {
   if (credentialMatch) {
     const credentialId = credentialMatch[1];
     if (credentialId === credentialIds.valid) {
-      json(response, 200, { downloadUrl: `http://127.0.0.1:${port}/fixture/credential`, requestId: "req-credential-valid" });
+      json(response, 200, { downloadUrl: `http://127.0.0.1:${port}/fixture/credential`, expiresAt: new Date(Date.now() + 240_000).toISOString() });
       return;
     }
     if (credentialId === credentialIds.invalid) {
-      json(response, 200, { downloadUrl: "javascript:fixture-secret", requestId: "req-credential-invalid" });
+      json(response, 200, { downloadUrl: "javascript:fixture-secret", expiresAt: new Date(Date.now() + 240_000).toISOString(), requestId: "req-credential-invalid" });
       return;
     }
     if (credentialId === credentialIds.expired) {
