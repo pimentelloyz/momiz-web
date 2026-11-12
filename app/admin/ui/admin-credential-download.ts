@@ -1,14 +1,20 @@
 import { safeRequestId } from "../../../lib/request-correlation.ts";
 import { AdminApiError } from "./admin-api-client.ts";
 
+const loopbackHosts = ["localhost", "127.0.0.1", "::1"];
+
+function isLoopbackRuntime() {
+  return typeof window !== "undefined" && loopbackHosts.includes(window.location.hostname);
+}
+
 export function safeEphemeralDownloadUrl(
   value: unknown,
-  allowLoopback = process.env.NODE_ENV !== "production",
+  allowLoopback = process.env.NODE_ENV !== "production" || isLoopbackRuntime(),
 ) {
   if (typeof value !== "string") return null;
   try {
     const url = new URL(value);
-    const localHttp = allowLoopback && url.protocol === "http:" && ["localhost", "127.0.0.1", "::1"].includes(url.hostname);
+    const localHttp = allowLoopback && url.protocol === "http:" && loopbackHosts.includes(url.hostname);
     return url.protocol === "https:" || localHttp ? url.href : null;
   } catch {
     return null;

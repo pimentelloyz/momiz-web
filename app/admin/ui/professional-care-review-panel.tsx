@@ -5,7 +5,13 @@ import { adminApi, adminErrorMessage, isAdminSessionExpired, jsonRequest } from 
 import { FeedbackState, MutationFeedback } from "./admin-primitives";
 import { AdminMutationState, AdminQueryState, runAdminMutation, runAdminQuery } from "./admin-query-state";
 import { openEphemeralCredentialUrl, readCredentialDownload } from "./admin-credential-download";
-import { AdminProfilePage, mergeAdminProfilePages, readAdminProfilePage } from "./admin-profile-pagination";
+import {
+  AdminProfilePage,
+  ProfessionalCredential,
+  ProfessionalVerificationStatus,
+  mergeAdminProfilePages,
+  readAdminProfilePage,
+} from "./admin-profile-pagination";
 import { AdminReportPage, mergeAdminReportPages, readAdminReportPage } from "./admin-report-pagination";
 import { AdminAuditPage, isUuidFilter, mergeAdminAuditPages, readAdminAuditPage } from "./admin-audit-pagination";
 import {
@@ -38,52 +44,8 @@ import {
 } from "./admin-professional-review";
 import styles from "./admin.module.css";
 
-type VerificationStatus =
-  | "DRAFT"
-  | "PENDING_VERIFICATION"
-  | "NEEDS_CORRECTION"
-  | "VERIFIED"
-  | "REJECTED"
-  | "SUSPENDED"
-  | "EXPIRED";
-
-type Credential = {
-  id: string;
-  type: string;
-  registrationNumber: string | null;
-  jurisdiction: string | null;
-  specialty: string | null;
-  issuer: string | null;
-  expiresAt: string | null;
-  status: string;
-  reviewReason: string | null;
-  documentFileName: string | null;
-  renewalOfCredentialId: string | null;
-};
-
-type ProfessionalProfile = {
-  id: string;
-  primaryProfession: string;
-  displayName: string;
-  bio: string | null;
-  city: string | null;
-  state: string | null;
-  verificationStatus: VerificationStatus;
-  submittedAt: string | null;
-  verifiedAt: string | null;
-  updatedAt?: string | null;
-  user: { id: string; name: string; email: string; photoUrl: string | null };
-  credentials: Credential[];
-  reviewLogs: Array<{
-    id: string;
-    action: string;
-    previousStatus: string | null;
-    resultingStatus: string | null;
-    reason: string | null;
-    createdAt: string;
-    actor: { id: string; name: string | null; email: string | null } | null;
-  }>;
-};
+type VerificationStatus = ProfessionalVerificationStatus;
+type Credential = ProfessionalCredential;
 
 type CommunicationReportStatus = "OPEN" | "RESOLVED" | "DISMISSED";
 
@@ -157,8 +119,8 @@ export function ProfessionalCareReviewPanel({
   onSessionExpired: () => void;
 }) {
   const [status, setStatus] = useState<VerificationStatus>("PENDING_VERIFICATION");
-  const [profilesState, setProfilesState] = useState<AdminQueryState<AdminProfilePage<ProfessionalProfile>>>({ phase: "loading" });
-  const [profilesMoreState, setProfilesMoreState] = useState<AdminQueryState<AdminProfilePage<ProfessionalProfile>> | { phase: "idle" }>({ phase: "idle" });
+  const [profilesState, setProfilesState] = useState<AdminQueryState<AdminProfilePage>>({ phase: "loading" });
+  const [profilesMoreState, setProfilesMoreState] = useState<AdminQueryState<AdminProfilePage> | { phase: "idle" }>({ phase: "idle" });
   const activeProfileStatusRef = useRef(status);
   const profileRequestVersionRef = useRef(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -251,7 +213,7 @@ export function ProfessionalCareReviewPanel({
     setProfilesMoreState({ phase: "idle" });
     const next = await runAdminQuery(async () => {
       const query = new URLSearchParams({ status: requestedStatus, limit: "50" });
-      return readAdminProfilePage<ProfessionalProfile>(await adminApi(`care/profiles?${query}`));
+      return readAdminProfilePage(await adminApi(`care/profiles?${query}`));
     }, (page) => page.items.length === 0);
     if (activeProfileStatusRef.current !== requestedStatus || !isCurrentProfessionalProfileRequest(requestVersion, profileRequestVersionRef.current)) return next;
     if (next.phase === "error" && isAdminSessionExpired(next.error)) {
@@ -273,7 +235,7 @@ export function ProfessionalCareReviewPanel({
     setProfilesMoreState({ phase: "loading" });
     const next = await runAdminQuery(async () => {
       const query = new URLSearchParams({ status: requestedStatus, limit: "50", cursor });
-      return readAdminProfilePage<ProfessionalProfile>(await adminApi(`care/profiles?${query}`));
+      return readAdminProfilePage(await adminApi(`care/profiles?${query}`));
     }, () => false);
     if (activeProfileStatusRef.current !== requestedStatus || !isCurrentProfessionalProfileRequest(requestVersion, profileRequestVersionRef.current)) return;
     if (next.phase === "error") {
@@ -1075,7 +1037,7 @@ export function ProfessionalCareReviewPanel({
                         <span>{credential.renewalOfCredentialId ? `RENOVAÇÃO · ${credential.status}` : credential.status}</span>
                       </div>
                       <p>{credential.registrationNumber || "Sem número"}{credential.jurisdiction ? ` · ${credential.jurisdiction}` : ""}</p>
-                      <small>{credential.specialty || credential.issuer || "Sem especialidade informada"}</small>
+                      <small>{credential.issuer || "Sem emissor informado"}</small>
                       {credential.documentFileName && (
                         <>
                           <MutationFeedback state={mutation} pendingTitle="Obtendo comprovante" errorTitle="Não foi possível abrir o comprovante" fallbackError="Não foi possível abrir o comprovante." className={styles.feedback} />
@@ -1099,7 +1061,7 @@ export function ProfessionalCareReviewPanel({
                     <article key={log.id}>
                       <div><strong>{log.action.replaceAll("_", " ")}</strong><span>{formatDate(log.createdAt)}</span></div>
                       <p>{[log.previousStatus, log.resultingStatus].filter(Boolean).join(" → ") || "Acesso administrativo"}</p>
-                      <small>{log.reason || "Sem observação"} · {log.actor?.name || log.actor?.email || "Administrador removido"}</small>
+                      <small>{log.reason || "Sem observação"}</small>
                     </article>
                   ))}
                 </div>
