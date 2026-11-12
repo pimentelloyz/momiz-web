@@ -24,6 +24,12 @@ import {
   readPilotReadiness,
   updatePilotGateWithReconciliation,
 } from "./admin-pilot-readiness";
+import {
+  AdminCareOperations,
+  areAdminCareMetricsEmpty,
+  isCurrentAdminCareMetricsRequest,
+  readAdminCareMetrics,
+} from "./admin-care-metrics";
 import styles from "./admin.module.css";
 
 type VerificationStatus =
@@ -73,19 +79,6 @@ type ProfessionalProfile = {
 };
 
 type CommunicationReportStatus = "OPEN" | "RESOLVED" | "DISMISSED";
-
-type Operations = {
-  active: number;
-  paused: number;
-  expiring: number;
-  blocked: number;
-  auditEvents: number;
-  deniedAuditEvents: number;
-  openReports: number;
-  pendingProfiles: number;
-  expiringCredentials: number;
-  expiredProfiles: number;
-};
 
 type CommunicationReport = {
   id: string;
@@ -165,7 +158,8 @@ export function ProfessionalCareReviewPanel({
   const [reason, setReason] = useState("");
   const [reviewMutation, setReviewMutation] = useState<AdminMutationState>({ phase: "idle" });
   const [credentialMutations, setCredentialMutations] = useState<Record<string, AdminMutationState>>({});
-  const [metricsState, setMetricsState] = useState<AdminQueryState<Operations>>({ phase: "loading" });
+  const [metricsState, setMetricsState] = useState<AdminQueryState<AdminCareOperations>>({ phase: "loading" });
+  const metricsRequestVersionRef = useRef(0);
   const [reportStatus, setReportStatus] = useState<CommunicationReportStatus>("OPEN");
   const [reportsState, setReportsState] = useState<AdminQueryState<AdminReportPage<CommunicationReport>>>({ phase: "loading" });
   const [reportsMoreState, setReportsMoreState] = useState<AdminQueryState<AdminReportPage<CommunicationReport>> | { phase: "idle" }>({ phase: "idle" });
@@ -296,34 +290,13 @@ export function ProfessionalCareReviewPanel({
   }, [loadProfiles]);
 
   const loadMetrics = useCallback(async () => {
+    const requestVersion = metricsRequestVersionRef.current + 1;
+    metricsRequestVersionRef.current = requestVersion;
     setMetricsState({ phase: "loading" });
     const next = await runAdminQuery(async () => {
-      const data = await adminApi("care/metrics");
-      const metrics = (data as { metrics: {
-        activeRelationships: number;
-        pausedRelationships: number;
-        expiringRelationships: number;
-        blockedCommunications: number;
-        openReports: number;
-        pendingProfiles: number;
-        expiringCredentials: number;
-        expiredProfiles: number;
-        auditEventsLast24h: number;
-        deniedAuditEventsLast24h: number;
-      } }).metrics;
-      return {
-        active: metrics.activeRelationships,
-        paused: metrics.pausedRelationships,
-        expiring: metrics.expiringRelationships,
-        blocked: metrics.blockedCommunications,
-        auditEvents: metrics.auditEventsLast24h,
-        deniedAuditEvents: metrics.deniedAuditEventsLast24h,
-        openReports: metrics.openReports,
-        pendingProfiles: metrics.pendingProfiles,
-        expiringCredentials: metrics.expiringCredentials,
-        expiredProfiles: metrics.expiredProfiles,
-      } satisfies Operations;
-    }, (metrics) => Object.values(metrics).every((value) => value === 0));
+      return readAdminCareMetrics(await adminApi("care/metrics"));
+    }, areAdminCareMetricsEmpty);
+    if (!isCurrentAdminCareMetricsRequest(requestVersion, metricsRequestVersionRef.current)) return next;
     if (next.phase === "error" && isAdminSessionExpired(next.error)) {
       onSessionExpired();
       return next;
