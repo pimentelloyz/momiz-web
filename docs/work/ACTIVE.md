@@ -11,7 +11,7 @@
 - Dependências de API/app: nenhuma tarefa ativa.
 - Próximo passo: aguardar novo pacote de trabalho.
 - Último checkpoint:
-  `docs/work/completed/2026-11-12-paginacao-relationships-care-admin.md`.
+  `docs/work/completed/2026-11-12-pilot-readiness-dto-minimizado.md`.
 
 ```markdown
 - Status:

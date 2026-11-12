@@ -15,12 +15,15 @@ import {
   mergeAdminRelationshipPages,
   readAdminRelationshipPage,
 } from "./admin-relationship-pagination";
+import { PilotDraft, PilotReadinessPanel } from "./pilot-readiness-panel";
 import {
-  PilotDraft,
   PilotGate,
   PilotReadiness,
-  PilotReadinessPanel,
-} from "./pilot-readiness-panel";
+  isCurrentPilotReadinessRequest,
+  pilotGatePatch,
+  readPilotReadiness,
+  updatePilotGateWithReconciliation,
+} from "./admin-pilot-readiness";
 import styles from "./admin.module.css";
 
 type VerificationStatus =
@@ -148,12 +151,6 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
-function csvCell(value: string | null | undefined) {
-  const normalized = value ?? "";
-  const safe = /^[=+\-@]/.test(normalized) ? `'${normalized}` : normalized;
-  return `"${safe.replaceAll('"', '""')}"`;
-}
-
 export function ProfessionalCareReviewPanel({
   onSessionExpired,
 }: {
@@ -192,6 +189,7 @@ export function ProfessionalCareReviewPanel({
   const [pilotReadinessState, setPilotReadinessState] = useState<AdminQueryState<PilotReadiness>>({ phase: "loading" });
   const [pilotDrafts, setPilotDrafts] = useState<Record<string, PilotDraft>>({});
   const [pilotMutations, setPilotMutations] = useState<Record<string, AdminMutationState>>({});
+  const pilotRequestVersionRef = useRef(0);
 
   useEffect(() => {
     activeProfileStatusRef.current = status;
@@ -345,18 +343,20 @@ export function ProfessionalCareReviewPanel({
       gate.key,
       {
         status: gate.status,
-        reason: gate.reason ?? "",
-        evidenceReference: gate.evidenceReference ?? "",
+        reason: "",
+        evidenceReference: "",
       },
     ])));
   }, []);
 
   const loadPilotReadiness = useCallback(async (showLoading = true) => {
+    const requestVersion = pilotRequestVersionRef.current + 1;
+    pilotRequestVersionRef.current = requestVersion;
     if (showLoading) setPilotReadinessState({ phase: "loading" });
     const next = await runAdminQuery(async () => {
-      const data = await adminApi("care/pilot-readiness") as { readiness: PilotReadiness };
-      return data.readiness;
+      return readPilotReadiness(await adminApi("care/pilot-readiness"));
     }, (readiness) => readiness.gates.length === 0);
+    if (!isCurrentPilotReadinessRequest(requestVersion, pilotRequestVersionRef.current)) return next;
     if (next.phase === "error" && isAdminSessionExpired(next.error)) {
       onSessionExpired();
       return next;
@@ -401,48 +401,24 @@ export function ProfessionalCareReviewPanel({
     }
     setPilotMutations((current) => ({ ...current, [gate.key]: { phase: "pending" } }));
     const result = await runAdminMutation(async () => {
-      await adminApi(
-        `care/pilot-readiness/${gate.key}`,
-        jsonRequest("PATCH", {
-          status: draft.status,
-          reason: draft.reason.trim(),
-          evidenceReference: draft.evidenceReference.trim() || null,
-        }),
+      await updatePilotGateWithReconciliation(
+        async () => {
+          await adminApi(
+          `care/pilot-readiness/${gate.key}`,
+          jsonRequest("PATCH", pilotGatePatch(draft.status, draft.reason, draft.evidenceReference, gate.updatedAt)),
+          );
+        },
+        async () => {
+          const refreshed = await loadPilotReadiness(false);
+          if (refreshed.phase === "error") throw refreshed.error;
+        },
       );
-      const refreshed = await loadPilotReadiness(false);
-      if (refreshed.phase === "error") throw refreshed.error;
-    }, "Gate registrado com trilha de auditoria. Nenhum rollout foi ativado.");
+    }, "Gate registrado. Nenhum rollout foi ativado.");
     if (result.phase === "error" && isAdminSessionExpired(result.error)) {
       onSessionExpired();
       return;
     }
     setPilotMutations((current) => ({ ...current, [gate.key]: result }));
-  }
-
-  function exportPilotAudit() {
-    if (!pilotReadiness) return;
-    const rows = [
-      ["gate", "nome", "estado anterior", "estado resultante", "justificativa", "evidência", "responsável", "data"],
-      ...pilotReadiness.gates.flatMap((gate) =>
-        gate.auditLogs.map((log) => [
-          gate.key,
-          gate.label,
-          log.previousStatus,
-          log.resultingStatus,
-          log.reason,
-          log.evidenceReference ?? "",
-          log.actor?.name || log.actor?.email || "Administrador removido",
-          log.createdAt,
-        ]),
-      ),
-    ];
-    const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
-    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }));
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `prontidao-piloto-${new Date().toISOString().slice(0, 10)}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
   }
 
   const loadReports = useCallback(async () => {
@@ -715,7 +691,6 @@ export function ProfessionalCareReviewPanel({
         mutations={pilotMutations}
         onDraftChange={updatePilotDraft}
         onSave={(gate) => void savePilotGate(gate)}
-        onExport={exportPilotAudit}
         onRetry={() => void loadPilotReadiness()}
       />
       <section className={styles.sectionCard}>

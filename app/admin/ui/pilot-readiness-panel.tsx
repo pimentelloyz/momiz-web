@@ -2,37 +2,10 @@
 
 import { FeedbackState, FormField, MutationFeedback } from "./admin-primitives";
 import type { AdminMutationState } from "./admin-query-state";
+import type { PilotGate, PilotGateStatus, PilotReadiness } from "./admin-pilot-readiness";
 import styles from "./admin.module.css";
 
-export type PilotGateStatus = "PENDING" | "APPROVED" | "BLOCKED";
-export type PilotGate = {
-  key: string;
-  label: string;
-  description: string;
-  status: PilotGateStatus;
-  reason: string | null;
-  evidenceReference: string | null;
-  decidedAt: string | null;
-  decidedBy: { id: string; name: string | null; email: string | null } | null;
-  auditLogs: Array<{
-    id: string;
-    previousStatus: PilotGateStatus;
-    resultingStatus: PilotGateStatus;
-    reason: string;
-    evidenceReference: string | null;
-    createdAt: string;
-    actor: { id: string; name: string | null; email: string | null } | null;
-  }>;
-};
-
-export type PilotReadiness = {
-  ready: boolean;
-  advisoryOnly: true;
-  rolloutAutomaticallyEnabled: false;
-  approvedCount: number;
-  requiredCount: number;
-  gates: PilotGate[];
-};
+export type { PilotGate, PilotGateStatus, PilotReadiness } from "./admin-pilot-readiness";
 
 export type PilotDraft = {
   status: PilotGateStatus;
@@ -51,7 +24,6 @@ export function PilotReadinessPanel({
   mutations,
   onDraftChange,
   onSave,
-  onExport,
   onRetry,
 }: {
   readiness: PilotReadiness | null;
@@ -60,7 +32,6 @@ export function PilotReadinessPanel({
   mutations: Record<string, AdminMutationState>;
   onDraftChange: (gate: string, field: keyof PilotDraft, value: string) => void;
   onSave: (gate: PilotGate) => void;
-  onExport: () => void;
   onRetry: () => void;
 }) {
   return (
@@ -76,9 +47,6 @@ export function PilotReadinessPanel({
             <span className={readiness.ready ? styles.readinessReady : styles.readinessBlocked} aria-live="polite">
               {readiness.ready ? "Pronto para decisão" : `${readiness.approvedCount}/${readiness.requiredCount} aprovados`}
             </span>
-            <button type="button" className={styles.secondaryButton} disabled={!readiness.gates.some((gate) => gate.auditLogs.length > 0)} onClick={onExport}>
-              Exportar histórico CSV
-            </button>
           </div>
         )}
       </div>
@@ -92,7 +60,7 @@ export function PilotReadinessPanel({
           className={styles.readinessNotice}
         />
       ) : !readiness ? (
-        <FeedbackState variant="loading" title="Carregando prontidão" description="Consultando gates e histórico auditável." className={styles.readinessNotice} />
+        <FeedbackState variant="loading" title="Carregando prontidão" description="Consultando o estado atual dos gates." className={styles.readinessNotice} />
       ) : readiness.gates.length === 0 ? (
         <FeedbackState variant="empty" title="Nenhum gate configurado" description="O piloto permanece bloqueado até que os gates sejam publicados." className={styles.readinessNotice} />
       ) : (
@@ -105,7 +73,7 @@ export function PilotReadinessPanel({
           />
           <div className={styles.pilotGateGrid}>
             {readiness.gates.map((gate) => {
-              const draft = drafts[gate.key] ?? { status: gate.status, reason: gate.reason ?? "", evidenceReference: gate.evidenceReference ?? "" };
+              const draft = drafts[gate.key] ?? { status: gate.status, reason: "", evidenceReference: "" };
               const mutation = mutations[gate.key] ?? { phase: "idle" };
               const reasonError = draft.reason.trim().length < 10
                 ? "Use pelo menos 10 caracteres."
@@ -130,17 +98,11 @@ export function PilotReadinessPanel({
                   <FormField label={`Referência da evidência ${draft.status === "APPROVED" ? "(obrigatória)" : "(opcional)"}`} error={evidenceError} className={styles.adminFormField}>
                     <input maxLength={1000} value={draft.evidenceReference} onChange={(event) => onDraftChange(gate.key, "evidenceReference", event.target.value)} placeholder="Ticket, parecer, relatório ou URL interna" />
                   </FormField>
-                  {gate.decidedAt && <small>Última decisão em {formatDate(gate.decidedAt)} por {gate.decidedBy?.name || gate.decidedBy?.email || "administrador removido"}.</small>}
+                  {gate.decidedAt && <small>Última decisão em {formatDate(gate.decidedAt)}.</small>}
                   <MutationFeedback state={mutation} pendingTitle="Registrando gate" errorTitle="Não foi possível registrar o gate" fallbackError="Não foi possível registrar o gate." className={styles.readinessNotice} />
                   <button type="button" className={styles.secondaryButton} disabled={mutation.phase === "pending" || Boolean(reasonError) || Boolean(evidenceError)} onClick={() => onSave(gate)}>
                     {mutation.phase === "pending" ? "Registrando…" : "Registrar decisão"}
                   </button>
-                  <details className={styles.pilotGateHistory}>
-                    <summary>Histórico auditável ({gate.auditLogs.length})</summary>
-                    {gate.auditLogs.length === 0 ? <p>Nenhuma decisão registrada para este gate.</p> : (
-                      <ol>{gate.auditLogs.map((log) => <li key={log.id}><div><strong>{log.previousStatus} → {log.resultingStatus}</strong><time dateTime={log.createdAt}>{formatDate(log.createdAt)}</time></div><p>{log.reason}</p><small>{log.evidenceReference ? `Evidência: ${log.evidenceReference}` : "Sem referência de evidência"} · {log.actor?.name || log.actor?.email || "Administrador removido"}</small></li>)}</ol>
-                    )}
-                  </details>
                 </article>
               );
             })}
