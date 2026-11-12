@@ -11,7 +11,7 @@
 - Dependências de API/app: nenhuma tarefa ativa.
 - Próximo passo: aguardar novo pacote de trabalho.
 - Último checkpoint:
-  `docs/work/completed/2026-11-12-care-metrics-dto-minimo.md`.
+  `docs/work/completed/2026-11-12-care-analytics-dto-fechado.md`.
 
 ```markdown
 - Status:

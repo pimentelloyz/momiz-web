@@ -1,23 +1,19 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { adminApi, adminErrorMessage, isAdminSessionExpired } from "./admin-api-client";
+import { FeedbackState } from "./admin-primitives";
+import { AdminQueryState } from "./admin-query-state";
+import {
+  AnalyticsMetric,
+  CareAnalyticsReport,
+  analyticsGroupKeys,
+  analyticsTotalKeys,
+  isAnalyticsDateRangeValid,
+  isCurrentCareAnalyticsRequest,
+  readCareAnalyticsReport,
+} from "./admin-care-analytics";
 import styles from "./admin.module.css";
-
-type Metric = { value: number | null; suppressed: boolean };
-type Group = { key: string; count: Metric };
-type Report = {
-  generatedAt: string;
-  period: { from: string; to: string };
-  privacy: {
-    method: string;
-    minimumCohortSize: number;
-    suppressedValue: null;
-    containsDirectIdentifiers: false;
-  };
-  totals: Record<string, Metric>;
-  groups: Record<string, Group[]>;
-};
 
 const totalLabels: Record<string, string> = {
   professionalProfilesCreated: "Novos perfis profissionais",
@@ -75,8 +71,8 @@ function localDate(date: Date) {
   return local.toISOString().slice(0, 10);
 }
 
-function displayMetric(metric: Metric) {
-  return metric.suppressed ? "Suprimido" : String(metric.value ?? 0);
+function displayMetric(metric: AnalyticsMetric) {
+  return metric.suppressed ? "Suprimido" : String(metric.value);
 }
 
 function csvCell(value: string) {
@@ -97,37 +93,47 @@ export function CareAnalyticsPanel({
   });
   const [from, setFrom] = useState(defaultPeriod.from);
   const [to, setTo] = useState(defaultPeriod.to);
-  const [report, setReport] = useState<Report | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [reportState, setReportState] = useState<AdminQueryState<CareAnalyticsReport> | { phase: "idle" }>({ phase: "idle" });
+  const requestVersionRef = useRef(0);
+  const report = reportState.phase === "ready" || reportState.phase === "empty" ? reportState.data : null;
+  const loading = reportState.phase === "loading";
 
   async function load(event?: FormEvent) {
     event?.preventDefault();
-    setLoading(true);
+    if (!isAnalyticsDateRangeValid(from, to)) {
+      setReportState({ phase: "error", error: new Error("Selecione um período válido de até 366 dias.") });
+      return;
+    }
+    const requestVersion = requestVersionRef.current + 1;
+    requestVersionRef.current = requestVersion;
+    setReportState({ phase: "loading" });
     try {
       const fromIso = new Date(`${from}T00:00:00`).toISOString();
       const toIso = new Date(`${to}T23:59:59.999`).toISOString();
-      const data = await adminApi(
+      const next = readCareAnalyticsReport(await adminApi(
         `care/analytics?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`,
-      ) as { report: Report };
-      setReport(data.report);
+      ));
+      if (!isCurrentCareAnalyticsRequest(requestVersion, requestVersionRef.current)) return;
+      setReportState({ phase: "ready", data: next });
       onMessage("Relatório anônimo atualizado.");
     } catch (error) {
+      if (!isCurrentCareAnalyticsRequest(requestVersion, requestVersionRef.current)) return;
       if (isAdminSessionExpired(error)) onSessionExpired();
-      else onMessage(adminErrorMessage(error, "Não foi possível gerar o relatório."));
-    } finally {
-      setLoading(false);
+      setReportState({ phase: "error", error });
     }
   }
 
   function exportCsv() {
     if (!report) return;
     const rows: string[][] = [["seção", "indicador", "valor", "suprimido"]];
-    for (const [key, metric] of Object.entries(report.totals)) {
-      rows.push(["totais", totalLabels[key] || key, metric.suppressed ? "" : String(metric.value), String(metric.suppressed)]);
+    for (const key of analyticsTotalKeys) {
+      const metric = report.totals[key];
+      rows.push(["totais", totalLabels[key], metric.suppressed ? "" : String(metric.value), String(metric.suppressed)]);
     }
-    for (const [groupKey, groups] of Object.entries(report.groups)) {
+    for (const groupKey of analyticsGroupKeys) {
+      const groups = report.groups[groupKey];
       for (const item of groups) {
-        rows.push([groupLabels[groupKey] || groupKey, valueLabels[item.key] || item.key, item.count.suppressed ? "" : String(item.count.value), String(item.count.suppressed)]);
+        rows.push([groupLabels[groupKey], valueLabels[item.key] || item.key, String(item.count.value), "false"]);
       }
     }
     const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
@@ -161,7 +167,17 @@ export function CareAnalyticsPanel({
         </div>
       </section>
 
-      {!report ? (
+      {reportState.phase === "loading" ? (
+        <FeedbackState variant="loading" title="Gerando relatório" description="Aplicando agregação e proteção por coorte ao período selecionado." className={styles.analyticsEmpty} />
+      ) : reportState.phase === "error" ? (
+        <FeedbackState
+          variant="error"
+          title="Não foi possível gerar o relatório"
+          description={adminErrorMessage(reportState.error, "Não foi possível gerar o relatório.")}
+          action={<button type="button" className={styles.secondaryButton} onClick={() => void load()}>Tentar novamente</button>}
+          className={styles.analyticsEmpty}
+        />
+      ) : !report ? (
         <section className={styles.analyticsEmpty}><h2>Escolha o período</h2><p>Gere um relatório para acompanhar adoção, agenda e segurança sem expor pessoas.</p></section>
       ) : (
         <>
@@ -171,22 +187,28 @@ export function CareAnalyticsPanel({
               <button className={styles.secondaryButton} onClick={exportCsv}>Exportar CSV protegido</button>
             </div>
             <div className={styles.analyticsTotals}>
-              {Object.entries(report.totals).map(([key, metric]) => (
+              {analyticsTotalKeys.map((key) => {
+                const metric = report.totals[key];
+                return (
                 <article className={metric.suppressed ? styles.suppressedMetric : ""} key={key}>
-                  <strong>{displayMetric(metric)}</strong><span>{totalLabels[key] || key}</span>
+                  <strong>{displayMetric(metric)}</strong><span>{totalLabels[key]}</span>
                 </article>
-              ))}
+                );
+              })}
             </div>
           </section>
           <section className={styles.analyticsGroups}>
-            {Object.entries(report.groups).map(([key, groups]) => (
+            {analyticsGroupKeys.map((key) => {
+              const groups = report.groups[key];
+              return (
               <article className={styles.sectionCard} key={key}>
-                <h3>{groupLabels[key] || key}</h3>
-                {groups.length === 0 ? <p>Sem ocorrências no período.</p> : (
+                <h3>{groupLabels[key]}</h3>
+                {groups.length === 0 ? <p>Dados abaixo do limiar foram omitidos; a ausência não revela categorias.</p> : (
                   <ul>{groups.map((item) => <li key={item.key}><span>{valueLabels[item.key] || item.key}</span><strong>{displayMetric(item.count)}</strong></li>)}</ul>
                 )}
               </article>
-            ))}
+              );
+            })}
           </section>
         </>
       )}
