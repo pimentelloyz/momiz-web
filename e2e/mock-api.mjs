@@ -66,6 +66,7 @@ const server = createServer((request, response) => {
       verificationStatus: "PENDING_VERIFICATION",
       submittedAt: "2026-11-11T12:00:00.000Z",
       verifiedAt: null,
+      updatedAt: "2026-11-12T12:00:00.000Z",
       user: { id: "user-synthetic", name: "Conta Sintética", email: "synthetic@example.test", photoUrl: null },
       credentials: [
         { id: credentialIds.valid, type: "Credencial válida", registrationNumber: "FIXTURE-1", jurisdiction: "SP", specialty: null, issuer: "Fixture", expiresAt: null, status: "PENDING", reviewReason: null, documentFileName: "valid.pdf", renewalOfCredentialId: null },

@@ -30,6 +30,12 @@ import {
   isCurrentAdminCareMetricsRequest,
   readAdminCareMetrics,
 } from "./admin-care-metrics";
+import {
+  ProfessionalReviewDecision,
+  isCurrentProfessionalProfileRequest,
+  professionalReviewPayload,
+  submitProfessionalReviewWithReconciliation,
+} from "./admin-professional-review";
 import styles from "./admin.module.css";
 
 type VerificationStatus =
@@ -65,6 +71,7 @@ type ProfessionalProfile = {
   verificationStatus: VerificationStatus;
   submittedAt: string | null;
   verifiedAt: string | null;
+  updatedAt?: string | null;
   user: { id: string; name: string; email: string; photoUrl: string | null };
   credentials: Credential[];
   reviewLogs: Array<{
@@ -156,7 +163,7 @@ export function ProfessionalCareReviewPanel({
   const profileRequestVersionRef = useRef(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reason, setReason] = useState("");
-  const [reviewMutation, setReviewMutation] = useState<AdminMutationState>({ phase: "idle" });
+  const [reviewMutations, setReviewMutations] = useState<Record<string, AdminMutationState>>({});
   const [credentialMutations, setCredentialMutations] = useState<Record<string, AdminMutationState>>({});
   const [metricsState, setMetricsState] = useState<AdminQueryState<AdminCareOperations>>({ phase: "loading" });
   const metricsRequestVersionRef = useRef(0);
@@ -223,6 +230,7 @@ export function ProfessionalCareReviewPanel({
     () => profiles.find((profile) => profile.id === selectedId) ?? profiles[0] ?? null,
     [profiles, selectedId],
   );
+  const reviewMutation = selected ? reviewMutations[selected.id] ?? { phase: "idle" as const } : { phase: "idle" as const };
   const selectedReport = useMemo(
     () => reports.find((report) => report.id === selectedReportId) ?? reports[0] ?? null,
     [reports, selectedReportId],
@@ -245,7 +253,7 @@ export function ProfessionalCareReviewPanel({
       const query = new URLSearchParams({ status: requestedStatus, limit: "50" });
       return readAdminProfilePage<ProfessionalProfile>(await adminApi(`care/profiles?${query}`));
     }, (page) => page.items.length === 0);
-    if (activeProfileStatusRef.current !== requestedStatus || profileRequestVersionRef.current !== requestVersion) return next;
+    if (activeProfileStatusRef.current !== requestedStatus || !isCurrentProfessionalProfileRequest(requestVersion, profileRequestVersionRef.current)) return next;
     if (next.phase === "error" && isAdminSessionExpired(next.error)) {
       onSessionExpired();
       return next;
@@ -267,7 +275,7 @@ export function ProfessionalCareReviewPanel({
       const query = new URLSearchParams({ status: requestedStatus, limit: "50", cursor });
       return readAdminProfilePage<ProfessionalProfile>(await adminApi(`care/profiles?${query}`));
     }, () => false);
-    if (activeProfileStatusRef.current !== requestedStatus || profileRequestVersionRef.current !== requestVersion) return;
+    if (activeProfileStatusRef.current !== requestedStatus || !isCurrentProfessionalProfileRequest(requestVersion, profileRequestVersionRef.current)) return;
     if (next.phase === "error") {
       if (isAdminSessionExpired(next.error)) onSessionExpired();
       setProfilesMoreState(next);
@@ -592,13 +600,18 @@ export function ProfessionalCareReviewPanel({
     setReportMutation(result);
   }
 
-  async function review(decision: "verify" | "request_correction" | "reject" | "suspend") {
+  async function review(decision: ProfessionalReviewDecision) {
     if (!selected) return;
-    if (decision !== "verify" && !reason.trim()) {
-      setReviewMutation({ phase: "error", error: new Error("Informe o motivo antes de solicitar correção, rejeitar ou suspender.") });
+    const target = selected;
+    if (reviewMutations[target.id]?.phase === "pending") return;
+    let payload: ReturnType<typeof professionalReviewPayload>;
+    try {
+      payload = professionalReviewPayload(decision, reason, target.updatedAt);
+    } catch (error) {
+      setReviewMutations((current) => ({ ...current, [target.id]: { phase: "error", error } }));
       return;
     }
-    setReviewMutation({ phase: "pending" });
+    setReviewMutations((current) => ({ ...current, [target.id]: { phase: "pending" } }));
     const successMessage = decision === "verify"
       ? isRenewalReview
         ? "Renovação aprovada. A nova credencial assumiu a vigência sem interromper os vínculos."
@@ -611,21 +624,21 @@ export function ProfessionalCareReviewPanel({
           ? "Perfil suspenso e vínculos ativos pausados."
           : "Cadastro profissional rejeitado.";
     const result = await runAdminMutation(async () => {
-      await adminApi(
-        `care/profiles/${selected.id}/review`,
-        jsonRequest("POST", { decision, reason: reason.trim() || null }),
+      await submitProfessionalReviewWithReconciliation(
+        () => adminApi(`care/profiles/${target.id}/review`, jsonRequest("POST", payload)),
+        async () => {
+          const profilesRefresh = await loadProfiles();
+          if (profilesRefresh.phase === "error") throw profilesRefresh.error;
+        },
       );
       setReason("");
-      const profilesRefresh = await loadProfiles();
-      if (profilesRefresh.phase === "error") throw profilesRefresh.error;
-      const metricsRefresh = await loadMetrics();
-      if (metricsRefresh.phase === "error") throw metricsRefresh.error;
+      await loadMetrics();
     }, successMessage);
+    setReviewMutations((current) => ({ ...current, [target.id]: result }));
     if (result.phase === "error" && isAdminSessionExpired(result.error)) {
       onSessionExpired();
       return;
     }
-    setReviewMutation(result);
   }
 
   async function openCredential(credential: Credential) {
@@ -995,7 +1008,7 @@ export function ProfessionalCareReviewPanel({
                   <button
                     key={profile.id}
                     className={selected?.id === profile.id ? styles.reviewSelected : styles.reviewItem}
-                    onClick={() => { setSelectedId(profile.id); setReason(""); setReviewMutation({ phase: "idle" }); }}
+                    onClick={() => { setSelectedId(profile.id); setReason(""); }}
                   >
                     <strong>{profile.displayName}</strong>
                     <span>{professionLabels[profile.primaryProfession] ?? profile.primaryProfession}</span>
@@ -1101,7 +1114,7 @@ export function ProfessionalCareReviewPanel({
                   )}
                   <label>
                     Motivo ou orientação ao profissional
-                    <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} placeholder="Obrigatório para correção ou rejeição" />
+                    <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} maxLength={1000} placeholder="Obrigatório para correção ou rejeição" />
                   </label>
                   <div className={styles.actions}>
                     <button disabled={reviewMutation.phase === "pending"} className={styles.dangerButton} onClick={() => void review("reject")}>Rejeitar</button>
@@ -1114,7 +1127,7 @@ export function ProfessionalCareReviewPanel({
                 <div className={styles.reviewActions}>
                   <label>
                     Motivo da suspensão
-                    <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} placeholder="Descreva o motivo operacional ou de segurança" />
+                    <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={3} maxLength={1000} placeholder="Descreva o motivo operacional ou de segurança" />
                   </label>
                   <div className={styles.actions}>
                     <button disabled={reviewMutation.phase === "pending"} className={styles.dangerButton} onClick={() => void review("suspend")}>Suspender perfil e pausar vínculos</button>
