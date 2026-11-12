@@ -9,6 +9,13 @@ import { AdminProfilePage, mergeAdminProfilePages, readAdminProfilePage } from "
 import { AdminReportPage, mergeAdminReportPages, readAdminReportPage } from "./admin-report-pagination";
 import { AdminAuditPage, isUuidFilter, mergeAdminAuditPages, readAdminAuditPage } from "./admin-audit-pagination";
 import {
+  AdminRelationshipPage,
+  AdminRelationshipStatus,
+  adminRelationshipStatuses,
+  mergeAdminRelationshipPages,
+  readAdminRelationshipPage,
+} from "./admin-relationship-pagination";
+import {
   PilotDraft,
   PilotGate,
   PilotReadiness,
@@ -177,6 +184,11 @@ export function ProfessionalCareReviewPanel({
   const [auditMoreState, setAuditMoreState] = useState<AdminQueryState<AdminAuditPage> | { phase: "idle" }>({ phase: "idle" });
   const auditFilterRef = useRef(auditPatientFilter);
   const auditRequestVersionRef = useRef(0);
+  const [relationshipStatus, setRelationshipStatus] = useState<"ALL" | AdminRelationshipStatus>("ALL");
+  const [relationshipsState, setRelationshipsState] = useState<AdminQueryState<AdminRelationshipPage>>({ phase: "loading" });
+  const [relationshipsMoreState, setRelationshipsMoreState] = useState<AdminQueryState<AdminRelationshipPage> | { phase: "idle" }>({ phase: "idle" });
+  const relationshipStatusRef = useRef(relationshipStatus);
+  const relationshipRequestVersionRef = useRef(0);
   const [pilotReadinessState, setPilotReadinessState] = useState<AdminQueryState<PilotReadiness>>({ phase: "loading" });
   const [pilotDrafts, setPilotDrafts] = useState<Record<string, PilotDraft>>({});
   const [pilotMutations, setPilotMutations] = useState<Record<string, AdminMutationState>>({});
@@ -193,6 +205,10 @@ export function ProfessionalCareReviewPanel({
     auditFilterRef.current = auditPatientFilter;
   }, [auditPatientFilter]);
 
+  useEffect(() => {
+    relationshipStatusRef.current = relationshipStatus;
+  }, [relationshipStatus]);
+
   const profiles = useMemo(
     () => profilesState.phase === "ready" || profilesState.phase === "empty" ? profilesState.data.items : [],
     [profilesState],
@@ -204,6 +220,10 @@ export function ProfessionalCareReviewPanel({
   const auditItems = useMemo(
     () => auditState.phase === "ready" || auditState.phase === "empty" ? auditState.data.items : [],
     [auditState],
+  );
+  const relationships = useMemo(
+    () => relationshipsState.phase === "ready" || relationshipsState.phase === "empty" ? relationshipsState.data.items : [],
+    [relationshipsState],
   );
   const pilotReadiness = pilotReadinessState.phase === "ready" || pilotReadinessState.phase === "empty" ? pilotReadinessState.data : null;
 
@@ -544,6 +564,59 @@ export function ProfessionalCareReviewPanel({
     else setAuditPatientFilter(value);
   }
 
+  const loadRelationships = useCallback(async () => {
+    const requestedStatus = relationshipStatus;
+    const requestVersion = relationshipRequestVersionRef.current + 1;
+    relationshipRequestVersionRef.current = requestVersion;
+    setRelationshipsState({ phase: "loading" });
+    setRelationshipsMoreState({ phase: "idle" });
+    const next = await runAdminQuery(async () => {
+      const query = new URLSearchParams({ limit: "50" });
+      if (requestedStatus !== "ALL") query.set("status", requestedStatus);
+      return readAdminRelationshipPage(await adminApi(`care/relationships?${query}`));
+    }, (page) => page.items.length === 0);
+    if (relationshipStatusRef.current !== requestedStatus || relationshipRequestVersionRef.current !== requestVersion) return next;
+    if (next.phase === "error" && isAdminSessionExpired(next.error)) {
+      onSessionExpired();
+      return next;
+    }
+    setRelationshipsState(next);
+    return next;
+  }, [onSessionExpired, relationshipStatus]);
+
+  const loadMoreRelationships = useCallback(async () => {
+    if (relationshipsState.phase !== "ready" || !relationshipsState.data.nextCursor || relationshipsMoreState.phase === "loading") return;
+    const requestedStatus = relationshipStatus;
+    const cursor = relationshipsState.data.nextCursor;
+    const requestVersion = relationshipRequestVersionRef.current;
+    setRelationshipsMoreState({ phase: "loading" });
+    const next = await runAdminQuery(async () => {
+      const query = new URLSearchParams({ limit: "50", cursor });
+      if (requestedStatus !== "ALL") query.set("status", requestedStatus);
+      return readAdminRelationshipPage(await adminApi(`care/relationships?${query}`));
+    }, () => false);
+    if (relationshipStatusRef.current !== requestedStatus || relationshipRequestVersionRef.current !== requestVersion) return;
+    if (next.phase === "error") {
+      if (isAdminSessionExpired(next.error)) onSessionExpired();
+      setRelationshipsMoreState(next);
+      return;
+    }
+    if (next.phase !== "ready" && next.phase !== "empty") return;
+    setRelationshipsState((current) => {
+      if (current.phase !== "ready" && current.phase !== "empty") return current;
+      return {
+        phase: "ready",
+        data: { items: mergeAdminRelationshipPages(current.data.items, next.data.items), nextCursor: next.data.nextCursor },
+      };
+    });
+    setRelationshipsMoreState({ phase: "idle" });
+  }, [onSessionExpired, relationshipStatus, relationshipsMoreState.phase, relationshipsState]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadRelationships(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadRelationships]);
+
   async function resolveReport(decision: "resolve" | "dismiss") {
     if (!selectedReport) return;
     if (!resolutionNote.trim()) {
@@ -686,6 +759,81 @@ export function ProfessionalCareReviewPanel({
             <div><strong>{metricsState.data.auditEvents}</strong><span>acessos auditados em 24h</span></div>
             <div><strong>{metricsState.data.deniedAuditEvents}</strong><span>acessos negados em 24h</span></div>
           </div>
+        )}
+      </section>
+
+      <section className={styles.sectionCard}>
+        <div className={styles.sectionTitle}>
+          <div>
+            <span className={styles.kicker}>Vínculos minimizados</span>
+            <h2>Relationships de cuidado</h2>
+            <p>Consulte somente identificadores, estado, vigência e capabilities ativas.</p>
+          </div>
+          <label className={styles.statusFilter}>
+            Situação
+            <select
+              value={relationshipStatus}
+              onChange={(event) => setRelationshipStatus(event.target.value as "ALL" | AdminRelationshipStatus)}
+            >
+              <option value="ALL">Todas</option>
+              {adminRelationshipStatuses.map((value) => <option key={value} value={value}>{value}</option>)}
+            </select>
+          </label>
+        </div>
+        {relationshipsState.phase === "loading" ? (
+          <FeedbackState variant="loading" title="Carregando vínculos" description="Consultando relationships administrativas minimizadas." className={styles.feedback} />
+        ) : relationshipsState.phase === "error" ? (
+          <FeedbackState
+            variant="error"
+            title="Não foi possível carregar os vínculos"
+            description={adminErrorMessage(relationshipsState.error, "Não foi possível consultar os vínculos administrativos.")}
+            action={<button type="button" className={styles.secondaryButton} onClick={() => void loadRelationships()}>Tentar novamente</button>}
+            className={styles.feedback}
+          />
+        ) : relationshipsState.phase === "empty" ? (
+          <FeedbackState variant="empty" title="Nenhum vínculo nesta situação" description="A consulta foi concluída sem relationships para o filtro selecionado." className={styles.feedback} />
+        ) : (
+          <>
+            <ol className={styles.reviewList} aria-label="Relationships administrativas">
+              {relationships.map((item) => (
+                <li key={item.id} className={styles.reviewBio}>
+                  <div><strong>{item.profession}</strong><span className={styles.planBadge}>{item.status}</span></div>
+                  <p>Paciente: {item.patientUserId}</p>
+                  <p>Perfil profissional: {item.professionalProfileId}</p>
+                  <p>Capabilities: {item.scopes.length > 0 ? item.scopes.map((scope) => scope.capability).join(", ") : "Nenhuma ativa"}</p>
+                  <small>Criado em {formatDate(item.createdAt)} · Atualizado em {formatDate(item.updatedAt)}</small>
+                  <small>Início: {formatDate(item.startsAt)} · Expiração: {formatDate(item.expiresAt)}</small>
+                  {(item.pausedAt || item.revokedAt || item.communicationBlockedAt) && (
+                    <small>
+                      {item.pausedAt ? `Pausado: ${formatDate(item.pausedAt)}` : ""}
+                      {item.revokedAt ? ` · Revogado: ${formatDate(item.revokedAt)}` : ""}
+                      {item.communicationBlockedAt ? ` · Comunicação bloqueada: ${formatDate(item.communicationBlockedAt)}` : ""}
+                    </small>
+                  )}
+                </li>
+              ))}
+            </ol>
+            {relationshipsMoreState.phase === "error" && (
+              <FeedbackState
+                variant="error"
+                title="Não foi possível carregar mais vínculos"
+                description={adminErrorMessage(relationshipsMoreState.error, "Os vínculos já carregados continuam disponíveis.")}
+                action={<button type="button" className={styles.secondaryButton} onClick={() => void loadMoreRelationships()}>Tentar novamente</button>}
+                className={styles.feedback}
+              />
+            )}
+            {relationshipsState.data.nextCursor && relationshipsMoreState.phase !== "error" && (
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                disabled={relationshipsMoreState.phase === "loading"}
+                aria-busy={relationshipsMoreState.phase === "loading"}
+                onClick={() => void loadMoreRelationships()}
+              >
+                {relationshipsMoreState.phase === "loading" ? "Carregando mais…" : "Carregar mais vínculos"}
+              </button>
+            )}
+          </>
         )}
       </section>
 

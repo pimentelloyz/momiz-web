@@ -98,6 +98,11 @@ const server = createServer((request, response) => {
     return;
   }
 
+  if (url.pathname === "/api/admin/care/relationships") {
+    json(response, 200, { items: [], relationships: [], nextCursor: null });
+    return;
+  }
+
   const credentialMatch = url.pathname.match(new RegExp(`^/api/admin/care/profiles/${professionalProfileId}/credentials/([0-9a-f-]+)/download-url$`));
   if (credentialMatch) {
     const credentialId = credentialMatch[1];
