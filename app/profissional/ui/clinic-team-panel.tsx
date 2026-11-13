@@ -1,52 +1,20 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { readCanonicalCareError, type CanonicalCareError } from "../../../lib/professional/care-context";
+import {
+  type ClinicListItem as Clinic,
+  type ClinicMember as Member,
+  type ClinicTeam as TeamPayload,
+  readClinicInvitationAcceptResponse,
+  readClinicInvitationCancelResponse,
+  readClinicInvitationCreateResponse,
+  readClinicListResponse,
+  readClinicMemberResponse,
+  readClinicResponse,
+  readClinicTeamResponse,
+} from "../../../lib/professional/clinic-team";
 import styles from "./professional.module.css";
-
-type Clinic = {
-  id: string;
-  name: string;
-  seatLimit: number;
-  memberships?: Array<{ id: string; role: "OWNER" | "ADMIN" | "MEMBER"; status: string }>;
-  _count?: { memberships: number; invitations: number };
-};
-
-type Member = {
-  id: string;
-  role: "OWNER" | "ADMIN" | "MEMBER";
-  status: "ACTIVE" | "SUSPENDED";
-  professionalProfile?: {
-    id: string;
-    displayName?: string | null;
-    primaryProfession?: string | null;
-    user?: { name?: string | null; photoUrl?: string | null };
-  };
-};
-
-type Invitation = {
-  id: string;
-  recipientEmail: string;
-  role: "ADMIN" | "MEMBER";
-  status: string;
-  expiresAt: string;
-};
-
-type AuditLog = {
-  id: string;
-  action: string;
-  targetMembershipId?: string | null;
-  targetInvitationId?: string | null;
-  createdAt: string;
-  actor?: { id: string; name?: string | null } | null;
-};
-
-type TeamPayload = {
-  clinic: Clinic;
-  membership: { id: string; role: "OWNER" | "ADMIN" | "MEMBER"; status: string };
-  members: Member[];
-  invitations: Invitation[];
-  auditLogs?: AuditLog[];
-};
 
 const professionLabels: Record<string, string> = {
   OBSTETRICIAN: "Médica obstetra",
@@ -66,16 +34,16 @@ const auditActionLabels: Record<string, string> = {
   OWNER_TRANSFERRED: "Transferiu a propriedade da clínica",
 };
 
-async function clinicRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function clinicRequest<T>(path: string, parser: (value: unknown) => T, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`/profissional/api/care/professional/clinics${path}`, {
     ...init,
     headers: init.body ? { "content-type": "application/json", ...init.headers } : init.headers,
     cache: "no-store",
   });
   if (response.status === 401) throw new Error("SESSION_EXPIRED");
-  const body = await response.json().catch(() => ({})) as T & { message?: string };
-  if (!response.ok) throw new Error(body.message || "Não foi possível concluir a operação.");
-  return body;
+  const body = await response.json().catch(() => ({})) as unknown;
+  if (!response.ok) throw readCanonicalCareError(body, "Não foi possível concluir a operação.");
+  return parser(body);
 }
 
 function formatDate(value: string) {
@@ -91,23 +59,25 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [feedback, setFeedback] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<CanonicalCareError | null>(null);
 
   const handleError = useCallback((operationError: unknown) => {
     if (operationError instanceof Error && operationError.message === "SESSION_EXPIRED") {
       onSessionExpired();
       return;
     }
-    setError(operationError instanceof Error ? operationError.message : "Não foi possível concluir a operação.");
+    setError(operationError && typeof operationError === "object" && "code" in operationError
+      ? operationError as CanonicalCareError
+      : { code: "CARE_CLINIC_RESPONSE_INVALID", message: operationError instanceof Error ? operationError.message : "Não foi possível concluir a operação.", requestId: "" });
   }, [onSessionExpired]);
 
   const loadClinics = useCallback(async () => {
     setLoading(true);
-    setError("");
+    setError(null);
     try {
-      const result = await clinicRequest<{ clinics: Clinic[] }>("");
-      setClinics(result.clinics || []);
-      setSelectedId((current) => current || result.clinics?.[0]?.id || "");
+      const result = await clinicRequest("", readClinicListResponse);
+      setClinics(result.clinics);
+      setSelectedId((current) => current || result.clinics[0]?.id || "");
     } catch (loadError) {
       handleError(loadError);
     } finally {
@@ -120,9 +90,9 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
       setTeam(null);
       return;
     }
-    setError("");
+    setError(null);
     try {
-      setTeam(await clinicRequest<TeamPayload>(`/${clinicId}/members`));
+      setTeam(await clinicRequest(`/${clinicId}/members`, readClinicTeamResponse));
     } catch (loadError) {
       handleError(loadError);
     }
@@ -152,9 +122,9 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
     event.preventDefault();
     const form = event.currentTarget;
     const name = String(new FormData(form).get("name") || "").trim();
-    setBusy("create"); setError(""); setFeedback("");
+    setBusy("create"); setError(null); setFeedback("");
     try {
-      const result = await clinicRequest<{ clinic: Clinic }>("", {
+      const result = await clinicRequest("", readClinicResponse, {
         method: "POST",
         body: JSON.stringify({ name }),
       });
@@ -169,9 +139,9 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
   async function acceptInvitation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const token = inviteToken.trim();
-    setBusy("accept"); setError(""); setFeedback("");
+    setBusy("accept"); setError(null); setFeedback("");
     try {
-      const result = await clinicRequest<{ clinic: Clinic }>(`/invitations/${encodeURIComponent(token)}/accept`, { method: "POST" });
+      const result = await clinicRequest(`/invitations/${encodeURIComponent(token)}/accept`, readClinicInvitationAcceptResponse, { method: "POST" });
       setInviteToken("");
       window.history.replaceState({}, "", "/profissional");
       await loadClinics();
@@ -186,9 +156,9 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
     if (!selectedId) return;
     const form = event.currentTarget;
     const data = new FormData(form);
-    setBusy("invite"); setError(""); setFeedback(""); setGeneratedLink("");
+    setBusy("invite"); setError(null); setFeedback(""); setGeneratedLink("");
     try {
-      const result = await clinicRequest<{ token: string }>(`/${selectedId}/invitations`, {
+      const result = await clinicRequest(`/${selectedId}/invitations`, readClinicInvitationCreateResponse, {
         method: "POST",
         body: JSON.stringify({
           recipientEmail: String(data.get("recipientEmail") || "").trim(),
@@ -206,9 +176,9 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
 
   async function cancelInvitation(invitationId: string) {
     if (!selectedId) return;
-    setBusy(invitationId); setError(""); setFeedback("");
+    setBusy(invitationId); setError(null); setFeedback("");
     try {
-      await clinicRequest(`/${selectedId}/invitations/${invitationId}`, { method: "DELETE" });
+      await clinicRequest(`/${selectedId}/invitations/${invitationId}`, readClinicInvitationCancelResponse, { method: "DELETE" });
       await Promise.all([loadClinics(), loadTeam(selectedId)]);
       setFeedback("Convite cancelado e vaga liberada.");
     } catch (operationError) { handleError(operationError); }
@@ -218,9 +188,9 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
   async function updateMember(member: Member) {
     if (!selectedId) return;
     const action = member.status === "ACTIVE" ? "suspend" : "reactivate";
-    setBusy(member.id); setError(""); setFeedback("");
+    setBusy(member.id); setError(null); setFeedback("");
     try {
-      await clinicRequest(`/${selectedId}/members/${member.id}`, {
+      await clinicRequest(`/${selectedId}/members/${member.id}`, readClinicMemberResponse, {
         method: "PATCH",
         body: JSON.stringify({ action }),
       });
@@ -232,11 +202,11 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
 
   async function transferOwnership(member: Member) {
     if (!selectedId || member.status !== "ACTIVE") return;
-    const displayName = member.professionalProfile?.displayName || member.professionalProfile?.user?.name || "este membro";
+    const displayName = member.professionalProfile.displayName || member.professionalProfile.user.name || "este membro";
     if (!window.confirm(`Transferir a propriedade para ${displayName}? Você passará a ser administrador da clínica.`)) return;
-    setBusy(member.id); setError(""); setFeedback("");
+    setBusy(member.id); setError(null); setFeedback("");
     try {
-      await clinicRequest(`/${selectedId}/members/${member.id}`, {
+      await clinicRequest(`/${selectedId}/members/${member.id}`, readClinicMemberResponse, {
         method: "PATCH",
         body: JSON.stringify({ action: "transferOwnership" }),
       });
@@ -261,7 +231,7 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
       </div>
       <p className={styles.sectionDescription}>Organize sua equipe sem compartilhar automaticamente nenhuma paciente ou dado clínico.</p>
 
-      {error && <div className={styles.error} role="alert">{error}</div>}
+      {error && <div className={styles.error} role="alert"><span>{error.message}</span>{error.requestId && <small>Identificador: {error.requestId}</small>}</div>}
       {feedback && <div className={styles.feedback} role="status">{feedback}</div>}
 
       <div className={styles.clinicActions}>
@@ -283,12 +253,12 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
             {clinics.map((clinic) => (
               <button className={clinic.id === selectedId ? styles.clinicTabActive : styles.clinicTab} key={clinic.id} onClick={() => setSelectedId(clinic.id)} type="button">
                 <strong>{clinic.name}</strong>
-                <span>{clinic._count?.memberships || 0} membro(s)</span>
+                <span>{clinic._count.memberships} membro(s)</span>
               </button>
             ))}
           </nav>
 
-          {team && selectedClinic && (
+          {team && team.clinic.id === selectedId && selectedClinic && (
             <div className={styles.teamContent}>
               <div className={styles.seatSummary}>
                 <div><span>Vagas ativas</span><strong>{occupiedSeats}/{team.clinic.seatLimit}</strong></div>
@@ -310,7 +280,7 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
               <div className={styles.teamColumns}>
                 <div><h3>Membros</h3><div className={styles.memberList}>{team.members.map((member) => (
                   <article className={styles.memberCard} key={member.id}>
-                    <div><strong>{member.professionalProfile?.displayName || member.professionalProfile?.user?.name || "Profissional"}</strong><span>{professionLabels[member.professionalProfile?.primaryProfession || ""] || "Profissional"} · {member.role}</span></div>
+                    <div><strong>{member.professionalProfile.displayName || member.professionalProfile.user.name || "Profissional"}</strong><span>{professionLabels[member.professionalProfile.primaryProfession] || "Profissional"} · {member.role}</span></div>
                     <span className={styles.statusBadge}>{member.status === "ACTIVE" ? "Ativo" : "Suspenso"}</span>
                     {canManage && member.role !== "OWNER" && <div className={styles.memberActions}>
                       {isOwner && member.status === "ACTIVE" && <button className={styles.textButton} disabled={busy === member.id} onClick={() => void transferOwnership(member)} type="button">Transferir propriedade</button>}
@@ -332,11 +302,11 @@ export function ClinicTeamPanel({ onSessionExpired }: { onSessionExpired: () => 
                     <h3>Histórico de segurança</h3>
                     <p className={styles.muted}>Últimas alterações administrativas da equipe.</p>
                   </div>
-                  {(team.auditLogs || []).length === 0 ? (
+                  {team.auditLogs.length === 0 ? (
                     <p className={styles.muted}>Nenhuma alteração registrada.</p>
                   ) : (
                     <ol className={styles.auditList}>
-                      {(team.auditLogs || []).map((log) => (
+                      {team.auditLogs.map((log) => (
                         <li key={log.id}>
                           <span className={styles.auditMarker} aria-hidden="true" />
                           <div>

@@ -1,8 +1,8 @@
 # Trabalho ativo — Web
 
 - Status: aguardando próxima tarefa
-- Atualizado em: 2026-11-12
-- Identificador: perfil-profissional-dto-minimo
+- Atualizado em: 2026-11-13
+- Identificador: nenhum
 - Objetivo: nenhuma implementação ativa.
 - Escopo: a definir pelo coordenador.
 - Fora de escopo: a definir pelo coordenador.
@@ -11,7 +11,7 @@
 - Dependências de API/app: nenhuma tarefa ativa.
 - Próximo passo: aguardar novo pacote de trabalho.
 - Último checkpoint:
-  `docs/work/completed/2026-11-12-perfil-profissional-dto-minimo.md`.
+  `docs/work/completed/2026-11-13-clinic-team-contracts.md`.
 
 ```markdown
 - Status:

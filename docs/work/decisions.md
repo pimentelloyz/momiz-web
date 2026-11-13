@@ -14,3 +14,11 @@ A landing apresenta planos a partir do catálogo público canônico da API, com 
 
 Links de loja aceitam apenas hosts oficiais. O Google Play deriva do package `com.lifeados.momiz.app`; a App Store permanece indisponível até receber URL oficial ou ID numérico, pois o bundle `com.lifeados.momiz` não identifica uma página pública.
 
+## D-WEB-004
+
+As respostas de clínicas e equipes profissionais são contratos fechados e
+validados antes de qualquer atualização de estado. Campos extras invalidam a
+resposta para impedir que expansões de PII, foto ou metadata atravessem a
+fronteira do painel. O token de convite só é aceito na resposta de criação e
+permanece em memória apenas enquanto o link recém-gerado é exibido.
+
