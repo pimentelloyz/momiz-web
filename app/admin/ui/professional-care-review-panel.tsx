@@ -12,7 +12,15 @@ import {
   mergeAdminProfilePages,
   readAdminProfilePage,
 } from "./admin-profile-pagination";
-import { AdminReportPage, mergeAdminReportPages, readAdminReportPage } from "./admin-report-pagination";
+import {
+  AdminReportPage,
+  CommunicationReportDetail,
+  CommunicationReportStatus,
+  isCurrentAdminReportDetailRequest,
+  mergeAdminReportPages,
+  readAdminReportDetail,
+  readAdminReportPage,
+} from "./admin-report-pagination";
 import { AdminAuditPage, isUuidFilter, mergeAdminAuditPages, readAdminAuditPage } from "./admin-audit-pagination";
 import {
   AdminRelationshipPage,
@@ -46,38 +54,6 @@ import styles from "./admin.module.css";
 
 type VerificationStatus = ProfessionalVerificationStatus;
 type Credential = ProfessionalCredential;
-
-type CommunicationReportStatus = "OPEN" | "RESOLVED" | "DISMISSED";
-
-type CommunicationReport = {
-  id: string;
-  category: string;
-  details: string | null;
-  status: CommunicationReportStatus;
-  createdAt: string;
-  resolvedAt: string | null;
-  resolutionNote: string | null;
-  patient: { id: string; name: string; email: string | null };
-  reporter: { id: string; name: string; email: string | null };
-  resolvedBy: { id: string; name: string; email: string | null } | null;
-  message: {
-    id: string;
-    content: string;
-    authorUserId: string;
-    createdAt: string;
-  } | null;
-  relationship: {
-    id: string;
-    status: string;
-    communicationBlockedAt: string | null;
-    professionalProfile: {
-      id: string;
-      displayName: string;
-      primaryProfession: string;
-      user: { id: string; name: string; email: string | null };
-    };
-  };
-};
 
 const statusLabels: Record<VerificationStatus, string> = {
   DRAFT: "Rascunho",
@@ -130,11 +106,14 @@ export function ProfessionalCareReviewPanel({
   const [metricsState, setMetricsState] = useState<AdminQueryState<AdminCareOperations>>({ phase: "loading" });
   const metricsRequestVersionRef = useRef(0);
   const [reportStatus, setReportStatus] = useState<CommunicationReportStatus>("OPEN");
-  const [reportsState, setReportsState] = useState<AdminQueryState<AdminReportPage<CommunicationReport>>>({ phase: "loading" });
-  const [reportsMoreState, setReportsMoreState] = useState<AdminQueryState<AdminReportPage<CommunicationReport>> | { phase: "idle" }>({ phase: "idle" });
+  const [reportsState, setReportsState] = useState<AdminQueryState<AdminReportPage>>({ phase: "loading" });
+  const [reportsMoreState, setReportsMoreState] = useState<AdminQueryState<AdminReportPage> | { phase: "idle" }>({ phase: "idle" });
   const activeReportStatusRef = useRef(reportStatus);
   const reportRequestVersionRef = useRef(0);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const activeSelectedReportIdRef = useRef<string | null>(null);
+  const reportDetailRequestVersionRef = useRef(0);
+  const [reportDetailState, setReportDetailState] = useState<AdminQueryState<CommunicationReportDetail> | { phase: "idle" }>({ phase: "idle" });
   const [resolutionNote, setResolutionNote] = useState("");
   const [reportMutation, setReportMutation] = useState<AdminMutationState>({ phase: "idle" });
   const [auditFilterDraft, setAuditFilterDraft] = useState("");
@@ -193,10 +172,9 @@ export function ProfessionalCareReviewPanel({
     [profiles, selectedId],
   );
   const reviewMutation = selected ? reviewMutations[selected.id] ?? { phase: "idle" as const } : { phase: "idle" as const };
-  const selectedReport = useMemo(
-    () => reports.find((report) => report.id === selectedReportId) ?? reports[0] ?? null,
-    [reports, selectedReportId],
-  );
+  const selectedReport = reportDetailState.phase === "ready" || reportDetailState.phase === "empty"
+    ? reportDetailState.data
+    : null;
   const pendingRenewals = useMemo(
     () => selected?.credentials.filter(
       (credential) => credential.status === "PENDING" && Boolean(credential.renewalOfCredentialId),
@@ -364,6 +342,35 @@ export function ProfessionalCareReviewPanel({
     setPilotMutations((current) => ({ ...current, [gate.key]: result }));
   }
 
+  const activateReport = useCallback((reportId: string | null) => {
+    if (activeSelectedReportIdRef.current === reportId) return;
+    activeSelectedReportIdRef.current = reportId;
+    reportDetailRequestVersionRef.current += 1;
+    setSelectedReportId(reportId);
+    setReportDetailState(reportId ? { phase: "loading" } : { phase: "idle" });
+  }, []);
+
+  const loadReportDetail = useCallback(async (reportId: string) => {
+    const requestVersion = reportDetailRequestVersionRef.current + 1;
+    reportDetailRequestVersionRef.current = requestVersion;
+    setReportDetailState({ phase: "loading" });
+    const next = await runAdminQuery(async () => {
+      return readAdminReportDetail(await adminApi(`care/communication-reports/${encodeURIComponent(reportId)}`));
+    });
+    if (!isCurrentAdminReportDetailRequest(
+      reportId,
+      activeSelectedReportIdRef.current,
+      requestVersion,
+      reportDetailRequestVersionRef.current,
+    )) return next;
+    if (next.phase === "error" && isAdminSessionExpired(next.error)) {
+      onSessionExpired();
+      return next;
+    }
+    setReportDetailState(next);
+    return next;
+  }, [onSessionExpired]);
+
   const loadReports = useCallback(async () => {
     const requestedStatus = reportStatus;
     const requestVersion = reportRequestVersionRef.current + 1;
@@ -372,7 +379,7 @@ export function ProfessionalCareReviewPanel({
     setReportsMoreState({ phase: "idle" });
     const next = await runAdminQuery(async () => {
       const query = new URLSearchParams({ status: requestedStatus, limit: "50" });
-      return readAdminReportPage<CommunicationReport>(await adminApi(`care/communication-reports?${query}`));
+      return readAdminReportPage(await adminApi(`care/communication-reports?${query}`));
     }, (page) => page.items.length === 0);
     if (activeReportStatusRef.current !== requestedStatus || reportRequestVersionRef.current !== requestVersion) return next;
     if (next.phase === "error" && isAdminSessionExpired(next.error)) {
@@ -380,15 +387,12 @@ export function ProfessionalCareReviewPanel({
       return next;
     }
     if (next.phase === "ready" || next.phase === "empty") {
-      setSelectedReportId((current) =>
-        next.data.items.some((report) => report.id === current)
-          ? current
-          : next.data.items[0]?.id ?? null,
-      );
+      const current = activeSelectedReportIdRef.current;
+      activateReport(next.data.items.some((report) => report.id === current) ? current : next.data.items[0]?.id ?? null);
     }
     setReportsState(next);
     return next;
-  }, [onSessionExpired, reportStatus]);
+  }, [activateReport, onSessionExpired, reportStatus]);
 
   const loadMoreReports = useCallback(async () => {
     if (reportsState.phase !== "ready" || !reportsState.data.nextCursor || reportsMoreState.phase === "loading") return;
@@ -398,7 +402,7 @@ export function ProfessionalCareReviewPanel({
     setReportsMoreState({ phase: "loading" });
     const next = await runAdminQuery(async () => {
       const query = new URLSearchParams({ status: requestedStatus, limit: "50", cursor });
-      return readAdminReportPage<CommunicationReport>(await adminApi(`care/communication-reports?${query}`));
+      return readAdminReportPage(await adminApi(`care/communication-reports?${query}`));
     }, () => false);
     if (activeReportStatusRef.current !== requestedStatus || reportRequestVersionRef.current !== requestVersion) return;
     if (next.phase === "error") {
@@ -421,6 +425,12 @@ export function ProfessionalCareReviewPanel({
     const timer = window.setTimeout(() => void loadReports(), 0);
     return () => window.clearTimeout(timer);
   }, [loadReports]);
+
+  useEffect(() => {
+    if (!selectedReportId) return;
+    const timer = window.setTimeout(() => void loadReportDetail(selectedReportId), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadReportDetail, selectedReportId]);
 
   const loadAuditLogs = useCallback(async () => {
     const requestedFilter = auditPatientFilter;
@@ -537,19 +547,21 @@ export function ProfessionalCareReviewPanel({
   }, [loadRelationships]);
 
   async function resolveReport(decision: "resolve" | "dismiss") {
-    if (!selectedReport) return;
+    if (!selectedReport || selectedReport.id !== activeSelectedReportIdRef.current) return;
     if (!resolutionNote.trim()) {
       setReportMutation({ phase: "error", error: new Error("Registre a análise e as medidas tomadas antes de encerrar a denúncia.") });
       return;
     }
     setReportMutation({ phase: "pending" });
     const successMessage = decision === "resolve" ? "Denúncia resolvida e auditada." : "Denúncia descartada com justificativa.";
+    const targetReportId = selectedReport.id;
     const result = await runAdminMutation(async () => {
       await adminApi(
-        `care/communication-reports/${selectedReport.id}`,
+        `care/communication-reports/${encodeURIComponent(targetReportId)}`,
         jsonRequest("PATCH", { decision, resolutionNote: resolutionNote.trim() }),
       );
       setResolutionNote("");
+      if (activeSelectedReportIdRef.current === targetReportId) activateReport(null);
       const reportsRefresh = await loadReports();
       if (reportsRefresh.phase === "error") throw reportsRefresh.error;
       const metricsRefresh = await loadMetrics();
@@ -786,12 +798,14 @@ export function ProfessionalCareReviewPanel({
             <div className={styles.reviewList}>
               {reports.map((report) => (
                 <button
+                  type="button"
                   key={report.id}
-                  className={selectedReport?.id === report.id ? styles.reviewSelected : styles.reviewItem}
-                  onClick={() => { setSelectedReportId(report.id); setResolutionNote(""); setReportMutation({ phase: "idle" }); }}
+                  className={selectedReportId === report.id ? styles.reviewSelected : styles.reviewItem}
+                  disabled={reportMutation.phase === "pending"}
+                  onClick={() => { activateReport(report.id); setResolutionNote(""); setReportMutation({ phase: "idle" }); }}
                 >
                   <strong>{reportCategoryLabels[report.category] ?? report.category}</strong>
-                  <span>{report.patient.name} · {report.relationship.professionalProfile.displayName}</span>
+                  <span>{report.status} · Denúncia {report.id}</span>
                   <small>{formatDate(report.createdAt)}</small>
                 </button>
               ))}
@@ -816,8 +830,21 @@ export function ProfessionalCareReviewPanel({
                 </button>
               )}
             </div>
-            {selectedReport && (
-              <div className={styles.reviewDetail}>
+            <div className={styles.reviewDetail}>
+              {!selectedReportId ? (
+                <div className={styles.empty}><h3>Selecione uma denúncia</h3><p>O contexto de moderação será consultado sob demanda.</p></div>
+              ) : reportDetailState.phase === "loading" || reportDetailState.phase === "idle" ? (
+                <FeedbackState variant="loading" title="Carregando detalhe" description="Consultando o contexto da denúncia selecionada." className={styles.feedback} />
+              ) : reportDetailState.phase === "error" ? (
+                <FeedbackState
+                  variant="error"
+                  title="Não foi possível carregar o detalhe"
+                  description={adminErrorMessage(reportDetailState.error, "Não foi possível consultar o contexto da denúncia.")}
+                  action={<button type="button" className={styles.secondaryButton} onClick={() => void loadReportDetail(selectedReportId)}>Tentar novamente</button>}
+                  className={styles.feedback}
+                />
+              ) : selectedReport ? (
+                <>
                 <div className={styles.reviewIdentity}>
                   <div>
                     <span className={styles.kicker}>{reportCategoryLabels[selectedReport.category] ?? selectedReport.category}</span>
@@ -853,8 +880,11 @@ export function ProfessionalCareReviewPanel({
                     <p>{selectedReport.resolutionNote}</p>
                   </div>
                 )}
-              </div>
-            )}
+                </>
+              ) : (
+                <div className={styles.empty}><h3>Detalhe indisponível</h3><p>Selecione novamente a denúncia para consultar o contexto.</p></div>
+              )}
+            </div>
           </div>
         )}
       </section>

@@ -1,7 +1,7 @@
 # Trabalho ativo — Web
 
 - Status: aguardando próxima tarefa
-- Atualizado em: 2026-11-13
+- Atualizado em: 2026-11-18
 - Identificador: nenhum
 - Objetivo: nenhuma implementação ativa.
 - Escopo: a definir pelo coordenador.
@@ -11,7 +11,7 @@
 - Dependências de API/app: nenhuma tarefa ativa.
 - Próximo passo: aguardar novo pacote de trabalho.
 - Último checkpoint:
-  `docs/work/completed/2026-11-13-clinic-team-contracts.md`.
+  `docs/work/completed/2026-11-18-lote-51-admin-communication-report-detail.md`.
 
 ```markdown
 - Status:
