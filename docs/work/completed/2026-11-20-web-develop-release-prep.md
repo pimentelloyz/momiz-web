@@ -15,8 +15,9 @@
   zero atrás. Assim, nenhuma mesclagem, rebase ou reset foi necessária.
 - As dependências foram reinstaladas com `npm ci` usando Node 24.11.0 e npm
   11.6.1; a auditoria reportou zero vulnerabilidades conhecidas.
-- Nenhum bloqueio local de código, contrato, build ou teste foi encontrado. A
-  única mudança permanente desta preparação é este registro operacional.
+- Nenhum bloqueio local de código, contrato, build ou teste foi encontrado na
+  preparação inicial. O follow-up de CI registrado abaixo corrigiu depois o
+  lockfile para a versão de npm usada pelo runner.
 
 ## Dependência do contrato da API
 
@@ -49,6 +50,44 @@
   imprimir valores.
 - Os dois manifests de universal links foram parseados como JSON válido.
 - `git diff --check`: aprovado antes do commit de encerramento.
+
+## Follow-up do CI `44797975763`
+
+### Causa
+
+- O workflow usa `node-version: 24`, que passou a resolver Node 24.22.3 com npm
+  11.19.1. A preparação inicial havia executado Node 24.11.0 com npm 11.6.1.
+- O lockfile continha os pacotes opcionais WASM de `sharp` e do resolver, mas não
+  materializava `@emnapi/runtime@1.11.3` nem o peer
+  `@emnapi/core@1.11.3`. O npm 11.19.1 passou a rejeitar essa árvore incompleta
+  antes da instalação.
+- A falha remota foi reproduzida localmente com as versões exatas do runner:
+  `npm ci` retornou `EUSAGE` e os mesmos dois registros `Missing ... from lock
+  file`. Com npm 11.6.1, o mesmo lock antigo era aceito.
+
+### Correção
+
+- `npm install --package-lock-only --ignore-scripts`, executado com Node 24.22.3
+  e npm 11.19.1, adicionou os dois nós `@emnapi` e normalizou somente metadados
+  `peer` do lockfile. Nenhuma dependência declarada nem versão de pacote mudou.
+- Uma segunda geração produziu exatamente o mesmo SHA-256 do lockfile, provando
+  que a correção é idempotente nessa toolchain.
+- Não foi necessário alterar código, `package.json` ou workflows.
+
+### Verificações do follow-up
+
+- `npm ci` limpo no workspace e outra instalação em diretório isolado: aprovados
+  com Node 24.22.3/npm 11.19.1; 356 pacotes auditados, zero vulnerabilidades.
+- `npm test`: 149/149 aprovados.
+- `npm run lint`, `npm run typecheck`, `npm run openapi:check`, `npm run
+  operations:validate` e `npm run release:preflight`: aprovados.
+- `npm run build`: aprovado com 22 páginas estáticas.
+- `npm run test:e2e`: 60/60 aprovados em Chromium desktop, Chromium Android e
+  WebKit/iPad.
+- Os avisos de `MODULE_TYPELESS_PACKAGE_JSON`, ESLint fora da janela de suporte e
+  scripts de instalação ainda não cobertos por `allowScripts` são não
+  bloqueantes; os scripts não foram aprovados implicitamente nem a política de
+  confiança foi ampliada neste ajuste de lockfile.
 
 ## Condições externas para produção
 
