@@ -11,7 +11,7 @@
 - Dependências de API/app: nenhuma tarefa ativa.
 - Próximo passo: aguardar novo pacote de trabalho.
 - Último checkpoint:
-  `docs/work/completed/2026-11-20-gift-contract-v2-audit.md`.
+  `docs/work/completed/2026-11-20-web-develop-release-prep.md`.
 
 ```markdown
 - Status:
