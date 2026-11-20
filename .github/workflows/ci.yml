@@ -24,7 +24,8 @@ jobs:
       - name: Validate operational runbooks
         run: npm run operations:validate
       - run: npm run lint
-      - run: npm run typecheck
+      - name: Generate route types and typecheck clean checkout
+        run: npm run typecheck
       - run: npm test
       - name: Validate release gate scripts
         run: SMOKE_BASE_URL=http://127.0.0.1:3021 SMOKE_ENVIRONMENT=preview SMOKE_EXPECTED_SHA="$GITHUB_SHA" npm run release:preflight

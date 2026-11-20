@@ -89,6 +89,52 @@
   bloqueantes; os scripts não foram aprovados implicitamente nem a política de
   confiança foi ampliada neste ajuste de lockfile.
 
+## Follow-up do CI `44799123394`
+
+### Causa
+
+- Os Route Handlers `app/admin/api/access/[...path]/route.ts` e
+  `app/profissional/api/care/[...path]/route.ts` usam o helper global
+  `RouteContext`, suportado pelo Next 16 para derivar `params` do literal da
+  rota.
+- Esse helper não pertence aos tipos estáticos do pacote: ele é gerado por
+  `next dev`, `next build` ou `next typegen`. O script anterior executava apenas
+  `tsc --noEmit`, portanto passava localmente quando `.next` residual existia e
+  falhava no checkout limpo da CI antes do build.
+- Uma cópia extraída do commit, sem `.next`, reproduziu exatamente os dois erros
+  `TS2304: Cannot find name 'RouteContext'` reportados pelo workflow.
+
+### Correção e gate
+
+- Conforme os guias locais do Next 16 para Route Handlers, TypeScript e CLI, o
+  script `typecheck` agora executa `next typegen && tsc --noEmit`. Assim os tipos
+  de rota são sempre gerados explicitamente antes do compilador.
+- O passo da CI foi nomeado `Generate route types and typecheck clean checkout`
+  e continua posicionado antes de testes e build, mantendo o checkout limpo como
+  gate de regressão.
+- `next-env.d.ts` deixou de ser versionado e foi incluído no `.gitignore`, como
+  recomenda a documentação do Next 16. `next typegen`, `next dev` e `next build`
+  continuam gerando o arquivo quando necessário, sem deixar diferenças entre
+  referências de desenvolvimento e produção.
+- Não foi necessário alterar os Route Handlers: conservar `RouteContext` mantém
+  a checagem forte do literal de rota e evita duplicar manualmente a forma dos
+  parâmetros.
+
+### Verificações do follow-up
+
+- Reprodução anterior à correção em cópia limpa: os dois `TS2304` confirmados.
+- Cópia final sem `.next`, `next-env.d.ts` ou dependências: `npm ci` e `npm run
+  typecheck` aprovados; `.next/types/routes.d.ts` e o helper foram gerados.
+- Workspace com `.next` e `next-env.d.ts` removidos: `npm run typecheck`
+  regenerou os artefatos ignorados e passou.
+- `npm ci`: aprovado com Node 24.22.3/npm 11.19.1 e zero vulnerabilidades.
+- `npm test`: 149/149 aprovados.
+- `npm run lint`, `npm run openapi:check`, `npm run operations:validate` e
+  `npm run release:preflight`: aprovados.
+- `npm run build`: aprovado com 22 páginas estáticas.
+- `npm run test:e2e`: 60/60 aprovados em Chromium desktop, Chromium Android e
+  WebKit/iPad.
+
 ## Condições externas para produção
 
 Os gates do repositório estão verdes, mas uma promoção real continua dependente
