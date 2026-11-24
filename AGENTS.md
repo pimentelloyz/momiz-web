@@ -28,6 +28,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Antes de criar qualquer componente visual ou fluxo, use `rg` para localizar componentes equivalentes e prefira reutilizar ou estender a implementação existente. Quando isso não for adequado, registre a justificativa objetiva no checkpoint.
 - Preserve os padrões existentes de Next.js, React e TypeScript.
 - A API é a autoridade para autenticação administrativa, autorização, planos e capacidades. Não duplique regras de negócio no cliente.
+- Para mudanças em contrato compartilhado, deep link ou comportamento que possa afetar o app publicado, aplique a skill [momiz-mobile-contract](../omah-api/.agents/skills/momiz-mobile-contract/SKILL.md) e leve a validação móvel ao coordenador.
 - Trate estados de carregamento, vazio, erro e sucesso de forma explícita.
 - Mantenha acessibilidade, responsividade e navegação por teclado.
 - Alterações em deep links e arquivos `.well-known` devem ser verificadas contra os identificadores reais dos apps.
